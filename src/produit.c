@@ -1,50 +1,22 @@
 #include "produit.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
-struct product read_product(void) {
-    struct product product;
-    char c;
+struct product {
+    char name[50];
+    char brand[50];
+    float price_euro;
+    char origin[50];
+    bool liquid;
+    union juan {
+        float mass_kg;
+        float volume_l;
+    } juan;
+};
 
-    puts("Enter product informations:");
-
-    fputs("Name: ", stdout);
-    fgets(product.name, sizeof product.name, stdin);
-    product.name[strcspn(product.name, "\n")] = '\0';
-
-    fputs("Brand: ", stdout);
-    fgets(product.brand, sizeof product.brand, stdin);
-    product.brand[strcspn(product.brand, "\n")] = '\0';
-
-    fputs("Price (€): ", stdout);
-    scanf("%f", &(product.price_euro));
-    getchar();
-
-    fputs("Origin: ", stdout);
-    fgets(product.origin, sizeof product.origin, stdin);
-    product.origin[strcspn(product.origin, "\n")] = '\0';
-
-    fputs("Liquid (y/n): ", stdout);
-    scanf("%c", &c);
-    getchar();
-
-    if (c == 'y') {
-        product.liquid = true;
-        fputs("Volume (L): ", stdout);
-        scanf("%f", &(product.juan.volume_l));
-        getchar();
-    } else {
-        product.liquid = false;
-        fputs("Mass (kg): ", stdout);
-        scanf("%f", &(product.juan.mass_kg));
-        getchar();
-    }
-
-    puts("");
-
-    return product;
-}
+static struct product read_product(void);
 
 void register_product(void) {
     FILE *product_db;
@@ -101,3 +73,47 @@ void print_product(const char *name) {
 
     fclose(product_db);
 }
+
+static struct product read_product(void) {
+    struct product product;
+    char c;
+
+    puts("Enter product informations:");
+
+    fputs("Name: ", stdout);
+    fgets(product.name, sizeof product.name, stdin);
+    product.name[strcspn(product.name, "\n")] = '\0';
+
+    fputs("Brand: ", stdout);
+    fgets(product.brand, sizeof product.brand, stdin);
+    product.brand[strcspn(product.brand, "\n")] = '\0';
+
+    fputs("Price (€): ", stdout);
+    scanf("%f", &(product.price_euro));
+    getchar();
+
+    fputs("Origin: ", stdout);
+    fgets(product.origin, sizeof product.origin, stdin);
+    product.origin[strcspn(product.origin, "\n")] = '\0';
+
+    fputs("Liquid (y/n): ", stdout);
+    scanf("%c", &c);
+    getchar();
+
+    if (c == 'y') {
+        product.liquid = true;
+        fputs("Volume (L): ", stdout);
+        scanf("%f", &(product.juan.volume_l));
+        getchar();
+    } else {
+        product.liquid = false;
+        fputs("Mass (kg): ", stdout);
+        scanf("%f", &(product.juan.mass_kg));
+        getchar();
+    }
+
+    puts("");
+
+    return product;
+}
+
