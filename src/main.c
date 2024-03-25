@@ -1,6 +1,8 @@
-#include <stdio.h>
+#include "produit.h"
 
 int main(void) {
-    puts("fils de pute");
+    register_product();
+    print_product("juan");
+
     return 0;
 }
