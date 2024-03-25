@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -std=c89
+CFLAGS = -Wall -Wextra -Wpedantic -std=c89 -O0 -ggdb3
 
 src_dir = src
 tmp_dir = tmp
