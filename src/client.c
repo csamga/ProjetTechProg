@@ -90,15 +90,12 @@ void search_client_by_id(
 }
 
 void print_client(struct client *client) {
-    FILE *client_db;
-
     puts("Client informations:");
     printf("Client: %s\n", client->name);
     printf("Phone: %s\n", client->phone);
     printf("Email: %s\n", client->email);
     printf("Address: %s\n", client->address);
 
-    fclose(client_db);
     puts("");
 }
 

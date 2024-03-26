@@ -88,8 +88,6 @@ void search_product_by_id(
 }
 
 void print_product(struct product *product) {
-    FILE *product_db;
-
     puts("Product informations:");
     printf("Product: %s\n", product->name);
     printf("Brand: %s\n", product->brand);
@@ -102,7 +100,6 @@ void print_product(struct product *product) {
         printf("Mass: %.3fkg\n", product->juan.mass_kg);
     }
 
-    fclose(product_db);
     puts("");
 }
 
