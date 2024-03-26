@@ -1,20 +1,7 @@
 #include "produit.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-
-struct product {
-    char name[50];
-    char brand[50];
-    float price_euro;
-    char origin[50];
-    bool liquid;
-    union juan {
-        float mass_kg;
-        float volume_l;
-    } juan;
-};
 
 static struct product read_product(void);
 
@@ -36,10 +23,13 @@ void register_product(void) {
     fclose(product_db);
 }
 
-void print_product(const char *name) {
+void search_product_by_name(
+    const char *name,
+    struct product *product,
+    bool *exists)
+{
     FILE *product_db;
-    struct product product;
-    bool found;
+    struct product tmp;
 
     product_db = fopen("product_db.dat", "rb");
 
@@ -48,30 +38,72 @@ void print_product(const char *name) {
         return;
     }
 
-    found = false;
+    *exists = false;
 
-    while (!feof(product_db) && !found) {
-        fread(&product, sizeof product, 1, product_db);
-        found = (strcmp(product.name, name) == 0);
+    while (!feof(product_db) && !*exists) {
+        fread(&tmp, sizeof tmp, 1, product_db);
+        *exists = (strcmp(tmp.name, name) == 0);
     }
 
-    if (found) {
-        puts("Product informations:");
-        printf("Product: %s\n", product.name);
-        printf("Brand: %s\n", product.brand);
-        printf("Price: %.2f€\n", product.price_euro);
-        printf("Origin: %s\n", product.origin);
-
-        if (product.liquid) {
-            printf("Volume: %.3fL\n", product.juan.volume_l);
-        } else {
-            printf("Mass: %.3fkg\n", product.juan.mass_kg);
-        }
+    if (*exists) {
+        *product = tmp;
     } else {
-        printf("Product \"%s\" does not exist", name);
+        product = NULL;
+        printf("Le produit \"%s\" n'existe pas", name);
     }
 
     fclose(product_db);
+}
+
+void search_product_by_id(
+    unsigned short id,
+    struct product *product,
+    bool *exists)
+{
+    FILE *product_db;
+    struct product tmp;
+
+    product_db = fopen("product_db.dat", "rb");
+
+    if (product_db == NULL) {
+        fprintf(stderr, "error: failed to open %s\n", "product_db.dat");
+        return;
+    }
+
+    *exists = false;
+
+    while (!feof(product_db) && !*exists) {
+        fread(&tmp, sizeof tmp, 1, product_db);
+        *exists = (tmp.id == id);
+    }
+
+    if (exists) {
+        *product = tmp;
+    } else {
+        product = NULL;
+        printf("Le product n°%hd n'existe pas", id);
+    }
+
+    fclose(product_db);
+}
+
+void print_product(struct product *product) {
+    FILE *product_db;
+
+    puts("Product informations:");
+    printf("Product: %s\n", product->name);
+    printf("Brand: %s\n", product->brand);
+    printf("Price: %.2f€\n", product->price_euro);
+    printf("Origin: %s\n", product->origin);
+
+    if (product->liquid) {
+        printf("Volume: %.3fL\n", product->juan.volume_l);
+    } else {
+        printf("Mass: %.3fkg\n", product->juan.mass_kg);
+    }
+
+    fclose(product_db);
+    puts("");
 }
 
 static struct product read_product(void) {

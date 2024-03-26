@@ -1,16 +1,8 @@
 #include "client.h"
 
-#include <stdbool.h>
-#include <stdio.h>
 #include <string.h>
 
-struct client {
-    char name[50];
-    char phone[12];
-    char email[50];
-    char address[50];
-    FILE *purchase_db;
-};
+static short n_clients = 0;
 
 static struct client read_client(void);
 
@@ -26,16 +18,20 @@ void register_client(void) {
     }
 
     client = read_client();
+    client.id = n_clients++;
 
     fwrite(&client, sizeof client, 1, client_db);
 
     fclose(client_db);
 }
 
-void print_client(const char *name) {
+void search_client_by_name(
+    const char *name,
+    struct client *client,
+    bool *exists)
+{
     FILE *client_db;
-    struct client client;
-    bool found;
+    struct client tmp;
 
     client_db = fopen("client_db.dat", "rb");
 
@@ -44,25 +40,66 @@ void print_client(const char *name) {
         return;
     }
 
-    found = false;
+    *exists = false;
 
-    while (!feof(client_db) && !found) {
-        fread(&client, sizeof client, 1, client_db);
-        found = (strcmp(client.name, name) == 0);
+    while (!feof(client_db) && !*exists) {
+        fread(&tmp, sizeof tmp, 1, client_db);
+        *exists = (strcmp(tmp.name, name) == 0);
     }
 
-    if (found) {
-        puts("Client informations:");
-        printf("Client: %s\n", client.name);
-        printf("Phone: %s\n", client.phone);
-        printf("Email: %s\n", client.email);
-        printf("Address: %s\n", client.address);
-
+    if (exists) {
+        *client = tmp;
     } else {
-        printf("Client \"%s\" does not exist", name);
+        client = NULL;
+        printf("Le client \"%s\" n'existe pas", name);
     }
 
     fclose(client_db);
+}
+
+void search_client_by_id(
+    unsigned short id,
+    struct client *client,
+    bool *exists)
+{
+    FILE *client_db;
+    struct client tmp;
+
+    client_db = fopen("client_db.dat", "rb");
+
+    if (client_db == NULL) {
+        fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
+        return;
+    }
+
+    *exists = false;
+
+    while (!feof(client_db) && !*exists) {
+        fread(&tmp, sizeof tmp, 1, client_db);
+        *exists = (tmp.id == id);
+    }
+
+    if (exists) {
+        *client = tmp;
+    } else {
+        client = NULL;
+        printf("Le client n°%hd n'existe pas", id);
+    }
+
+    fclose(client_db);
+}
+
+void print_client(struct client *client) {
+    FILE *client_db;
+
+    puts("Client informations:");
+    printf("Client: %s\n", client->name);
+    printf("Phone: %s\n", client->phone);
+    printf("Email: %s\n", client->email);
+    printf("Address: %s\n", client->address);
+
+    fclose(client_db);
+    puts("");
 }
 
 static struct client read_client(void) {
