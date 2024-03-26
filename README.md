@@ -1,5 +1,5 @@
 # Projet Gestion de Commerce
-## Auteurs : Lohan Fleury et Gabin Mascioli
+### Auteurs : Lohan Fleury et Gabin Mascioli
 
 Le programme est divisé en 4 modes :
 - Client
@@ -22,16 +22,16 @@ opérant sur l'objet du mode en question :
 En plus de ces 4 actions de bases, les 4 modes permettent d'exécuter des actions
 spécifiques.
 
-# Client
+### Client
 - Consulter l'historique d'achat
 
-# Fournisseur
+### Fournisseur
 - Passer une commande
 - Enregistrer la réception de commande
 
-# Produit
+### Produit
 - Consulter l'inventaire des produits
 
-# Vente
+### Vente
 - Enregistrer une transaction
 - Consulter l'historique des ventes
