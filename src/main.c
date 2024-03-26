@@ -1,3 +1,4 @@
+#include "database.h"
 #include "produit.h"
 #include "client.h"
 
@@ -5,11 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 
-enum info {CLIENT, PRODUCT};
-
 void process_input(bool *quit) {
     char choice, c;
-    enum info info;
+    enum db_type db_type;
     char name[50];
     short id;
     struct client client;
@@ -31,10 +30,10 @@ void process_input(bool *quit) {
     case '4':
         switch (choice) {
         case '3':
-            info = CLIENT;
+            db_type = CLIENT;
             break;
         case '4':
-            info = PRODUCT;
+            db_type = PRODUCT;
             break;
         }
 
@@ -50,7 +49,7 @@ void process_input(bool *quit) {
 
         switch (choice) {
         case '1':
-            if (info == CLIENT) {
+            if (db_type == CLIENT) {
                 fputs("Identifiant client : ", stdout);
                 scanf("%hd", &id);
 
@@ -72,7 +71,7 @@ void process_input(bool *quit) {
             }
             break;
         case '2':
-            if (info == CLIENT) {
+            if (db_type == CLIENT) {
                 fputs("Nom client : ", stdout);
                 fgets(name, sizeof name, stdin);
                 name[strcspn(name, "\n")] = '\0';
@@ -106,6 +105,8 @@ void process_input(bool *quit) {
 int main(void) {
     bool quit;
 
+    database_open();
+
     quit = false;
 
     while (!quit) {
@@ -117,6 +118,8 @@ int main(void) {
         puts("5: Quitter");
         process_input(&quit);
     }
+
+    database_close();
 
     return 0;
 }
