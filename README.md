@@ -2,10 +2,10 @@
 ### Auteurs : Lohan Fleury et Gabin Mascioli
 
 ## TODO
-- [ ] Implémenter modes
+- [x] Implémenter modes
 - [ ] Implémenter actions base
 - [ ] Implémenter actions modes
-- [ ] Implémenter sélection modes
+- [x] Implémenter sélection modes
 - [ ] Implémenter sélection actions
 - [ ] Définir structures
     - [ ] Client
