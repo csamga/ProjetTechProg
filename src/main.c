@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #define COUNTOF(x) (sizeof (x) / sizeof *(x))
+#define CSI "\x1b["
 
 enum modes {
     MODE_CLIENT,
@@ -17,12 +18,68 @@ enum modes {
     MODE_QUITTER
 };
 
-enum actions_base {
-    ACTION_BASE_ENREGISTRER,
-    ACTION_BASE_MODIFIER,
-    ACTION_BASE_CONSULTER,
-    ACTION_BASE_SUPPRIMER
+enum actions {
+    ACTION_CREER = 0,
+    ACTION_MODIFIER,
+    ACTION_CONSULTER,
+    ACTION_SUPPRIMER,
+    ACTION_RETOUR,
+    ACTION_QUITTER,
+    ACTION_CLIENT_CONSULTER_HISTO_ACHAT = 6,
+    ACTION_FOURNISSEUR_PASSER_COMMANDE = 6,
+    ACTION_FOURNISSEUR_ENREGISTRER_LIVRAISON,
+    ACTION_PRODUIT_CONSULTER_INVENTAIRE = 6,
+    ACTION_VENTE_ENREGISTRER_TRANSAC = 0,
+    ACTION_VENTE_CONSULTER_HISTO_VENTES
 };
+
+enum screen_buffer {
+    screen_buffer_default,
+    screen_buffer_alternative
+};
+
+void clear_screen(void) {
+    fputs(CSI "2J", stdout);
+}
+
+void use_screen_buffer(enum screen_buffer sb) {
+    switch (sb) {
+    case screen_buffer_alternative:
+        fputs(CSI "?1049h", stdout);
+        break;
+    case screen_buffer_default:
+        fputs(CSI "?1049l", stdout);
+        break;
+    }
+}
+
+void set_cursor_pos(short x, short y) {
+    printf(CSI "%hd;%hdH", ++y, ++x);
+}
+
+void move_cursor_to_col(short x) {
+    printf(CSI "%hdG", x);
+}
+
+void set_cursor_home(void) {
+    fputs(CSI "H", stdout);
+}
+
+void save_cursor_pos(void) {
+    fputs(CSI "s", stdout);
+}
+
+void restore_cursor_pos(void) {
+    fputs(CSI "u", stdout);
+}
+
+void show_cursor(bool show) {
+    if (show) {
+        fputs(CSI "?25h", stdout);
+    } else {
+        fputs(CSI "?25l", stdout);
+    }
+}
 
 void list_print(char *list[], short n, int base) {
 #define CHUNK 256
@@ -178,10 +235,15 @@ int main(void) {
     bool quit;
 
     database_open();
+    use_screen_buffer(screen_buffer_alternative);
+    show_cursor(false);
 
     quit = false;
 
     while (!quit) {
+        clear_screen();
+        set_cursor_home();
+
         puts("Choisir mode d'action:");
         list_print(mode_str, COUNTOF(mode_str), 1);
 
@@ -191,6 +253,9 @@ int main(void) {
             quit = true;
             continue;
         }
+
+        clear_screen();
+        set_cursor_home();
 
         printf("Mode %s\n", mode_str[mode]);
 
@@ -313,6 +378,9 @@ int main(void) {
     }
 
     database_close();
+
+    show_cursor(true);
+    use_screen_buffer(screen_buffer_default);
 
     return 0;
 }
