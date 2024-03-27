@@ -3,21 +3,22 @@
 
 ## TODO
 - [x] Implémenter modes
-- [ ] Implémenter actions base
-- [ ] Implémenter actions modes
+- [x] Implémenter actions base
+- [x] Implémenter actions modes
 - [x] Implémenter sélection modes
-- [ ] Implémenter sélection actions
+- [x] Implémenter sélection actions
+- [ ] Gérer le mode vente et actions de base
 - [ ] Définir structures
-    - [ ] Client
+    - [x] Client
     - [ ] Fournisseur
-    - [ ] Produit
+    - [x] Produit
     - [ ] Commande
     - [ ] Livraison
     - [ ] Transaction
 - [ ] Implémenter bases de données
-    - [ ] Client
+    - [x] Client
     - [ ] Produits
-    - [ ] Fournisseurs
+    - [x] Fournisseurs
     - [ ] Historique achat par client
     - [ ] Historique ventes par produit
 
