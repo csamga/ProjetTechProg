@@ -10,7 +10,7 @@
 - [ ] Gérer le mode vente et actions de base
 - [ ] Définir structures
     - [x] Client
-    - [ ] Fournisseur
+    - [x] Fournisseur
     - [x] Produit
     - [ ] Commande
     - [ ] Livraison

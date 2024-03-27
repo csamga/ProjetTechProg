@@ -1,6 +1,7 @@
 #include "database.h"
 #include "produit.h"
 #include "client.h"
+#include "fournisseur.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -312,7 +313,7 @@ int main(void) {
         case MODE_FOURNISSEUR:
             switch (action) {
             case ACTION_CREER:
-                puts("pas encore implémenté");
+                fournisseur_register();
                 break;
             case ACTION_MODIFIER:
                 puts("pas encore implémenté");
