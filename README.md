@@ -1,6 +1,27 @@
 # Projet Gestion de Commerce
 ### Auteurs : Lohan Fleury et Gabin Mascioli
 
+## TODO
+- [ ] Implémenter modes
+- [ ] Implémenter actions base
+- [ ] Implémenter actions modes
+- [ ] Implémenter sélection modes
+- [ ] Implémenter sélection actions
+- [ ] Définir structures
+    - [ ] Client
+    - [ ] Fournisseur
+    - [ ] Produit
+    - [ ] Commande
+    - [ ] Livraison
+    - [ ] Transaction
+- [ ] Implémenter bases de données
+    - [ ] Client
+    - [ ] Produits
+    - [ ] Fournisseurs
+    - [ ] Historique achat par client
+    - [ ] Historique ventes par produit
+
+
 Le programme est divisé en 4 modes :
 - Client
 - Fournisseur
