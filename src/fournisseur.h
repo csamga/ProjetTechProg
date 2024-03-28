@@ -23,11 +23,11 @@ void fournisseur_search_by_name(
 );
 
 void fournisseur_search_by_id(
-    const short *id,
+    const unsigned short id,
     struct fournisseur *fournisseur,
     bool *exists
 );
 
-void fournisseur_print(struct fournisseur *fournisseur);
+void fournisseur_inspect(void);
 
 #endif

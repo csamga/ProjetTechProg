@@ -25,7 +25,6 @@ void fournisseur_register(void) {
     fclose(fournisseur_db);
 }
 
-
 void fournisseur_delete(void) {
     char name[50];
     FILE *old_fournisseur_db, *new_fournisseur_db;
@@ -57,18 +56,28 @@ void fournisseur_delete(void) {
 }
 
 
-void fournisseur_print(struct fournisseur *fournisseur) {
-    puts("Fournisseur informations:");
-    printf("Fournisseur: %s\n", fournisseur->name);
-    printf("Phone: %s\n", fournisseur->phone);
-    printf("Email: %s\n", fournisseur->email);
-    printf("Address: %s\n", fournisseur->address);
+void fournisseur_inspect(void) {
+    struct fournisseur fournisseur;
+    char name[50];
+    bool exists;
 
-    puts("");
+    fputs("Nom fournisseur : ", stdout);
+    fgets(name, sizeof name, stdin);
+    name[strcspn(name, "\n")] = '\0';
+
+    fournisseur_search_by_name(name, &fournisseur, &exists);
+
+    if (exists) {
+        puts("Fournisseur informations:");
+        printf("Fournisseur: %s\n", fournisseur.name);
+        printf("Phone: %s\n", fournisseur.phone);
+        printf("Email: %s\n", fournisseur.email);
+        printf("Address: %s\n", fournisseur.address);
+    }
 }
 
 void fournisseur_search_by_name( 
-    char name,
+    const char *name,
     struct fournisseur *fournisseur,
     bool *exists)
 {
@@ -101,7 +110,7 @@ void fournisseur_search_by_name(
 
 
 void fournisseur_search_by_id(
-    unsigned short id,
+    const unsigned short id,
     struct fournisseur *fournisseur,
     bool *exists)
 {
@@ -155,5 +164,4 @@ static struct fournisseur fournisseur_read(void) {
     fournisseur.address[strcspn(fournisseur.address, "\n")] = '\0';
 
     return fournisseur;
-    
 }
