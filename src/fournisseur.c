@@ -4,7 +4,7 @@
 
 static short n_fournisseur = 0;
 
-static struct fournisseur _fournisseur_read(void);
+static struct fournisseur fournisseur_read(void);
 
 void fournisseur_register(void) {
     FILE *fournisseur_db;
@@ -24,6 +24,38 @@ void fournisseur_register(void) {
 
     fclose(fournisseur_db);
 }
+
+
+void fournisseur_delete(void) {
+    char name[50];
+    FILE *old_fournisseur_db, *new_fournisseur_db;
+    struct fournisseur tmp;
+
+    old_fournisseur_db = fopen("founisseur_db.dat", "rb");
+
+    fputs("Nom : ", stdout);
+    fgets(name, sizeof name, stdin);
+
+    if (old_fournisseur_db == NULL) {
+        fprintf(stderr, "error : failed to open %s\n", "old_fournisseur_db.dat");
+    }
+    
+    new_fournisseur_db = fopen("tmp_fournisseur_db.dat", "a");
+
+    while (!feof(old_fournisseur_db)) {
+        fread(&tmp, sizeof tmp, 1, old_fournisseur_db);
+        if (strcmp(tmp.name, name) != 0) {
+            fwrite(&tmp, sizeof tmp, 1, new_fournisseur_db);
+        }  
+    }
+    
+    fclose(old_fournisseur_db);
+    fclose(new_fournisseur_db);
+
+    remove("fournisseur_db.dat");
+    rename("new_fournisseur_db.dat", "fournisseur_db.dat");
+}
+
 
 void fournisseur_print(struct fournisseur *fournisseur) {
     puts("Fournisseur informations:");

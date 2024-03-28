@@ -1,5 +1,5 @@
 #ifndef FOURNISSEUR_H_INCLUDED
-#define FOURNISSUER_H_INCLUDED
+#define FOURNISSEUR_H_INCLUDED
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,6 +12,8 @@ struct fournisseur {
     char address[50];
 };
 
+void fournissseur_delete(void);
+    
 void fournisseur_register(void);
 
 void fournisseur_search_by_name(
