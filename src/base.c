@@ -1,7 +1,7 @@
 #include "base.h"
 
 #include "client.h"
-#include "fournisseur.h"
+#include "supplier.h"
 #include "produit.h"
 
 void base_register(enum modes mode) {
@@ -10,7 +10,7 @@ void base_register(enum modes mode) {
         client_register();
         break;
     case MODE_SUPPLIER:
-        fournisseur_register();
+        supplier_register();
         break;
     case MODE_PRODUCT:
         product_register();
@@ -30,7 +30,7 @@ void base_inspect(enum modes mode) {
         client_inspect();
         break;
     case MODE_SUPPLIER:
-        fournisseur_inspect();
+        supplier_inspect();
         break;
     case MODE_PRODUCT:
         product_inspect();
