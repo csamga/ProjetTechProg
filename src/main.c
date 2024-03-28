@@ -295,13 +295,13 @@ int main(void) {
                 register_client();
                 break;
             case ACTION_MODIFIER:
-                puts("pas encore implémenté");
+                modify_client();
                 break;
             case ACTION_CONSULTER:
-                puts("pas encore implémenté");
+                print_client();
                 break;
             case ACTION_SUPPRIMER:
-                puts("pas encore implémenté");
+                client_delete();
                 break;
             case ACTION_CLIENT_CONSULTER_HISTO_ACHAT:
                 puts("pas encore implémenté");
