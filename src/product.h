@@ -1,5 +1,5 @@
-#ifndef PRODUIT_H_INCLUDED
-#define PRODUIT_H_INCLUDED
+#ifndef PRODUCT_H_INCLUDED
+#define PRODUCT_H_INCLUDED
 
 #include <stdbool.h>
 

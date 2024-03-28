@@ -2,7 +2,7 @@
 
 #include "client.h"
 #include "supplier.h"
-#include "produit.h"
+#include "product.h"
 
 void base_register(enum modes mode) {
     switch (mode) {
