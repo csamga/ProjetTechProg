@@ -1,11 +1,12 @@
 #include "client.h"
+#include "input.h"
+#include "terminal.h"
 
 #include <string.h>
-#include <ctype.h>
 
-static short n_clients = 0;
+static unsigned short n_clients = 0;
 
-static struct client read_client(void);
+static void client_read(struct client *client);
 
 void client_register(void) {
     FILE *client_db;
@@ -18,12 +19,15 @@ void client_register(void) {
         return;
     }
 
-    client = read_client();
+    client_read(&client);
     client.id = n_clients++;
 
     fwrite(&client, sizeof client, 1, client_db);
 
     fclose(client_db);
+
+    puts("Client créé avec succès");
+    getchar();
 }
 
 void client_modify(void) {
@@ -49,7 +53,7 @@ void client_modify(void) {
         return;
     }
 
-    client = read_client();
+    client_read(&client);
 
     fwrite(&client, sizeof client, 1, client_db);
 
@@ -72,14 +76,16 @@ void client_delete(void) {
         return;
     }
 
-    old_client_db = fopen("client_db.dat", "rb");
+    rename("client_db.dat", "tmp_client_db.dat");
+
+    old_client_db = fopen("tmp_client_db.dat", "rb");
 
     if (old_client_db == NULL) {
         fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
         return;
     }
 
-    new_client_db = fopen("tmp_client_db.dat", "a");
+    new_client_db = fopen("client_db.dat", "a");
 
     if (new_client_db == NULL) {
         fprintf(stderr, "error: failed to open %s\n", "new_client_db.dat");
@@ -89,7 +95,7 @@ void client_delete(void) {
     while (!feof(old_client_db)) {
         fread(&tmp, sizeof tmp, 1, old_client_db);
 
-        if (strcmp(name, tmp.name) != 0) {
+        if (strcmp(name, tmp.first_name) != 0) {
             fwrite(&tmp, sizeof tmp, 1, new_client_db);
         }
     }
@@ -97,8 +103,7 @@ void client_delete(void) {
     fclose(old_client_db);
     fclose(new_client_db);
 
-    remove("client_db.dat");
-    rename("tmp_client_db.dat", "client_db.dat");
+    remove("tmp_client_db.dat");
 }
 
 void client_search_by_name(
@@ -120,7 +125,7 @@ void client_search_by_name(
 
     while (!feof(client_db) && !*exists) {
         fread(&tmp, sizeof tmp, 1, client_db);
-        *exists = (strcmp(tmp.name, name) == 0);
+        *exists = (strcmp(tmp.last_name, name) == 0);
     }
 
     if (exists && *exists && client) {
@@ -128,6 +133,7 @@ void client_search_by_name(
     } else {
         client = NULL;
         printf("Le client \"%s\" n'existe pas", name);
+        getchar();
     }
 
     fclose(client_db);
@@ -156,16 +162,19 @@ void client_search_by_id(
     }
 
     if (exists && *exists) {
-        *client = tmp;
+        if (client) {
+            *client = tmp;
+        }
     } else {
         client = NULL;
         printf("Le client n°%hd n'existe pas", id);
+        getchar();
     }
 
     fclose(client_db);
 }
 
-void client_print(void) {
+void client_inspect(void) {
     struct client client;
     char name[50];
     bool exists;
@@ -176,83 +185,71 @@ void client_print(void) {
 
     client_search_by_name(name, &client, &exists);
 
+    clear_screen();
+    set_cursor_home();
+
     if (exists) {
-        puts("Client informations:");
-        printf("Client: %hd\n", client.id);
-        printf("Client: %s\n", client.name);
-        printf("Phone: %s\n", client.phone);
+        puts("Informations client");
+        printf("Identifiant: %hd\n", client.id);
+        printf("Nom: %s\n", client.last_name);
+        printf("Prénom: %s\n", client.first_name);
+        printf("Tel: %s\n", client.phone);
         printf("Email: %s\n", client.email);
-        printf("Address: %s\n", client.address);
+        address_inspect(&client.address);
+
+        getchar();
     }
 }
 
-static struct client read_client(void) {
-#define CHUNK 256
-    struct client client;
-    char tmp[CHUNK];
+static void client_read(struct client *client) {
+    char *tmp;
+    size_t len;
     bool valid;
-    size_t len, i;
-    char c;
-    bool has_at;
-    char local[100], domain[100];
 
-    puts("Saisir informations client:");
+    puts("Saisir informations client :");
 
-    /* Saisie nom */
+    /* Saisie du nom */
+    fputs("Nom : ", stdout);
+
     do {
-        fputs("Nom: ", stdout);
-        fgets(tmp, sizeof tmp, stdin);
-        tmp[strcspn(tmp, "\n")] = '\0';
-
-        len = strlen(tmp);
-        valid = true;
-
-        for (i = 0; i < len && valid; i++) {
-            c = tmp[i];
-            valid = (isalpha(c) || isspace(c));
-        }
-
-        if (!valid) {
-            puts("Le nom ne peut comporter que des lettres et des espaces");
-        }
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
     } while (!valid);
 
-    strncpy(client.name, tmp, sizeof client.name);
+    strncpy(client->last_name, tmp, sizeof client->last_name);
 
-    /* Saisie tel */
+    /* Saisie du prénom */
+    fputs("Prénom : ", stdout);
+
     do {
-        fputs("Tel: ", stdout);
-        fgets(tmp, sizeof tmp, stdin);
-        tmp[strcspn(tmp, "\n")] = '\0';
-
-        len = strlen(tmp);
-        valid = (len == 10);
-
-        for (i = 0; i < len && valid; i++) {
-            c = tmp[i];
-            valid = isdigit(c);
-        }
-
-        if (!valid) {
-            puts("Le tel doit comporter 10 chiffres");
-        }
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
     } while (!valid);
 
-    strncpy(client.phone, tmp, sizeof client.phone);
+    strncpy(client->first_name, tmp, sizeof client->first_name);
+
+    /* Saisie du numéro de téléphone */
+    fputs("Tel : ", stdout);
 
     do {
-        fputs("Email: ", stdout);
-        fgets(tmp, sizeof tmp, stdin);
-        tmp[strcspn(tmp, "\n")] = '\0';
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_phone(tmp, len);
+    } while (!valid);
 
-        sscanf(tmp, "%s@%s", NULL, NULL);
+    strncpy(client->phone, tmp, sizeof client->phone);
+
+    /* Saisie de l'adresse email */
+    fputs("Email : ", stdout);
+
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_email(tmp, len);
     } while (false);
 
-    fputs("Address: ", stdout);
-    fgets(client.address, sizeof client.address, stdin);
-    client.address[strcspn(client.address, "\n")] = '\0';
+    strncpy(client->email, tmp, sizeof client->email);
 
-    puts("");
+    /* Saisie de l'adresse */
+    address_read(&client->address);
 
-    return client;
+    free(tmp);
 }

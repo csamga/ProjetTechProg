@@ -1,16 +1,19 @@
 #ifndef CLIENT_H_INCLUDED
 #define CLIENT_H_INCLUDED
 
+#include "address.h"
+
 #include <stdbool.h>
 #include <stdio.h>
 
 struct client {
-    short id;
-    char name[50];
+    unsigned short id;
+    char last_name[32];
+    char first_name[32];
     char phone[12];
-    char email[100];
-    char address[50];
-    FILE *purchase_db;
+    char email[64];
+    struct address address;
+    /* char purchase_db_file_name[32]; */
 };
 
 void client_register(void);
@@ -29,6 +32,6 @@ void client_search_by_id(
     bool *exists
 );
 
-void client_print(void);
+void client_inspect(void);
 
 #endif
