@@ -14,22 +14,25 @@ struct product {
         float mass_kg;
         float volume_l;
     } juan;
+    unsigned short stock;
 };
 
-void register_product(void);
+void product_register(void);
+void product_modify(void);
+void product_delete(void);
 
-void search_product_by_name(
+void product_search_by_name(
     const char *name,
     struct product *product,
     bool *exists
 );
 
-void search_product_by_id(
+void product_search_by_id(
     unsigned short id,
     struct product *product,
     bool *exists
 );
 
-void print_product(struct product *product);
+void product_inspect(void);
 
 #endif

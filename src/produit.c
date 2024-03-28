@@ -3,9 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static struct product read_product(void);
+static short n_products = 0;
 
-void register_product(void) {
+static struct product product_read(void);
+
+void product_register(void) {
     FILE *product_db;
     struct product product;
     
@@ -16,14 +18,90 @@ void register_product(void) {
         return;
     }
 
-    product = read_product();
+    product = product_read();
+    product.id = n_products++;
 
     fwrite(&product, sizeof product, 1, product_db);
 
     fclose(product_db);
 }
 
-void search_product_by_name(
+void product_modify(void) {
+    FILE *product_db;
+    struct product product;
+    bool exists;
+    char name[50];
+    
+    product_db = fopen("product_db.dat", "rb+");
+
+    if (product_db == NULL) {
+        fprintf(stderr, "error: failed to open %s\n", "product_db.dat");
+        return;
+    }
+
+    fputs("Nom : ", stdout);
+    fgets(name, sizeof name, stdin);
+    name[strcspn(name, "\n")] = '\0';
+
+    product_search_by_name(name, &product, &exists);
+
+    if (!exists) {
+        return;
+    }
+
+    product = product_read();
+
+    fwrite(&product, sizeof product, 1, product_db);
+
+    fclose(product_db);
+}
+
+void product_delete(void) {
+    FILE *old_product_db, *new_product_db;
+    char name[50];
+    struct product tmp;
+    bool exists;
+
+    fputs("Nom : ", stdout);
+    fgets(name, sizeof name, stdin);
+    name[strcspn(name, "\n")] = '\0';
+
+    product_search_by_name(name, NULL, &exists);
+
+    if (!exists) {
+        return;
+    }
+
+    old_product_db = fopen("product_db.dat", "rb");
+
+    if (old_product_db == NULL) {
+        fprintf(stderr, "error: failed to open %s\n", "product_db.dat");
+        return;
+    }
+
+    new_product_db = fopen("tmp_product_db.dat", "a");
+
+    if (new_product_db == NULL) {
+        fprintf(stderr, "error: failed to open %s\n", "new_product_db.dat");
+        return;
+    }
+
+    while (!feof(old_product_db)) {
+        fread(&tmp, sizeof tmp, 1, old_product_db);
+
+        if (strcmp(name, tmp.name) != 0) {
+            fwrite(&tmp, sizeof tmp, 1, new_product_db);
+        }
+    }
+
+    fclose(old_product_db);
+    fclose(new_product_db);
+
+    remove("product_db.dat");
+    rename("tmp_product_db.dat", "product_db.dat");
+}
+
+void product_search_by_name(
     const char *name,
     struct product *product,
     bool *exists)
@@ -45,8 +123,10 @@ void search_product_by_name(
         *exists = (strcmp(tmp.name, name) == 0);
     }
 
-    if (*exists) {
-        *product = tmp;
+    if (exists && *exists) {
+        if (product) {
+            *product = tmp;
+        }
     } else {
         product = NULL;
         printf("Le produit \"%s\" n'existe pas", name);
@@ -55,7 +135,7 @@ void search_product_by_name(
     fclose(product_db);
 }
 
-void search_product_by_id(
+void product_search_by_id(
     unsigned short id,
     struct product *product,
     bool *exists)
@@ -77,7 +157,7 @@ void search_product_by_id(
         *exists = (tmp.id == id);
     }
 
-    if (exists) {
+    if (exists && *exists && product) {
         *product = tmp;
     } else {
         product = NULL;
@@ -87,23 +167,33 @@ void search_product_by_id(
     fclose(product_db);
 }
 
-void print_product(struct product *product) {
-    puts("Product informations:");
-    printf("Product: %s\n", product->name);
-    printf("Brand: %s\n", product->brand);
-    printf("Price: %.2f€\n", product->price_euro);
-    printf("Origin: %s\n", product->origin);
+void product_inspect(void) {
+    struct product product;
+    char name[50];
+    bool exists;
 
-    if (product->liquid) {
-        printf("Volume: %.3fL\n", product->juan.volume_l);
-    } else {
-        printf("Mass: %.3fkg\n", product->juan.mass_kg);
+    fputs("Nom produit : ", stdout);
+    fgets(name, sizeof name, stdin);
+    name[strcspn(name, "\n")] = '\0';
+
+    product_search_by_name(name, &product, &exists);
+
+    if (exists) {
+        puts("Product informations:");
+        printf("Product: %s\n", product.name);
+        printf("Brand: %s\n", product.brand);
+        printf("Price: %.2f€\n", product.price_euro);
+        printf("Origin: %s\n", product.origin);
+
+        if (product.liquid) {
+            printf("Volume: %.3fL\n", product.juan.volume_l);
+        } else {
+            printf("Mass: %.3fkg\n", product.juan.mass_kg);
+        }
     }
-
-    puts("");
 }
 
-static struct product read_product(void) {
+static struct product product_read(void) {
     struct product product;
     char c;
 
@@ -145,4 +235,3 @@ static struct product read_product(void) {
 
     return product;
 }
-
