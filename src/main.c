@@ -206,16 +206,16 @@ int main(void) {
         "Consulter historique achat",
     };
 
-    char *action_fournisseur_str[2] = {
+    char *action_supplier_str[2] = {
         "Passer commande",
         "Enregistrer livraison",
     };
 
-    char *action_produit_str[1] = {
+    char *action_product_str[1] = {
         "Consulter inventaire",
     };
 
-    char *action_vente_str[2] = {
+    char *action_sale_str[2] = {
         "Enregistrer transaction",
         "Consulter historique",
     };
@@ -259,20 +259,20 @@ int main(void) {
             }
 
             switch (mode) {
-                case MODE_CLIENT:
-                    list_print(action_client_str, COUNTOF(action_client_str), 7);
-                    break;
-                case MODE_SUPPLIER:
-                    list_print(action_fournisseur_str, COUNTOF(action_fournisseur_str), 7);
-                    break;
-                case MODE_PRODUCT:
-                    list_print(action_produit_str, COUNTOF(action_produit_str), 7);
-                    break;
-                case MODE_SALE:
-                    list_print(action_vente_str, COUNTOF(action_vente_str), 1);
-                    break;
-                default:
-                    break;
+            case MODE_CLIENT:
+                list_print(action_client_str, COUNTOF(action_client_str), 7);
+                break;
+            case MODE_SUPPLIER:
+                list_print(action_supplier_str, COUNTOF(action_supplier_str), 7);
+                break;
+            case MODE_PRODUCT:
+                list_print(action_product_str, COUNTOF(action_product_str), 7);
+                break;
+            case MODE_SALE:
+                list_print(action_sale_str, COUNTOF(action_sale_str), 1);
+                break;
+            default:
+                break;
             }
 
             mode_process_input(mode, &action);
