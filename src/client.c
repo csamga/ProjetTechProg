@@ -3,6 +3,7 @@
 #include "terminal.h"
 
 #include <string.h>
+#include <stdio.h>
 
 static unsigned short n_clients = 0;
 
@@ -34,7 +35,7 @@ void client_modify(void) {
     FILE *client_db;
     struct client client;
     bool exists;
-    char name[50];
+    char name[32];
     
     client_db = fopen("client_db.dat", "rb+");
 
@@ -60,43 +61,77 @@ void client_modify(void) {
     fclose(client_db);
 }
 
-void client_delete(void) {
-    FILE *old_client_db, *new_client_db;
-    char name[50];
-    struct client tmp;
+void client_inspect(void) {
+    struct client client;
+    char name[32];
     bool exists;
 
-    fputs("Nom : ", stdout);
+    fputs("Nom client : ", stdout);
     fgets(name, sizeof name, stdin);
     name[strcspn(name, "\n")] = '\0';
 
-    client_search_by_name(name, NULL, &exists);
+    client_search_by_name(name, &client, &exists);
 
-    if (!exists) {
+    clear_screen();
+    set_cursor_home();
+
+    if (exists) {
+        puts("Informations client");
+        printf("Identifiant: %hd\n", client.id);
+        printf("Nom: %s\n", client.last_name);
+        printf("Prénom: %s\n", client.first_name);
+        printf("Tel: %s\n", client.phone);
+        printf("Email: %s\n", client.email);
+        address_inspect(&client.address);
+
+        getchar();
+    }
+}
+
+void client_delete(void) {
+    FILE *old_client_db, *new_client_db;
+    struct client client;
+    char name[32], *tmp;
+    bool valid;
+    size_t len;
+
+    /* Saisie du nom */
+    fputs("Nom : ", stdout);
+
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
+
+    strncpy(name, tmp, sizeof name);
+
+    client_search_by_name(name, NULL, &valid);
+
+    if (!valid) {
         return;
     }
 
-    rename("client_db.dat", "tmp_client_db.dat");
+    rename("client_db.dat", "old_client_db.dat");
 
-    old_client_db = fopen("tmp_client_db.dat", "rb");
+    old_client_db = fopen("old_client_db.dat", "rb");
 
     if (old_client_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
+        fprintf(stderr, "error: failed to open %s\n", "old_client_db.dat");
         return;
     }
 
     new_client_db = fopen("client_db.dat", "a");
 
     if (new_client_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "new_client_db.dat");
+        fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
         return;
     }
 
     while (!feof(old_client_db)) {
         fread(&tmp, sizeof tmp, 1, old_client_db);
 
-        if (strcmp(name, tmp.first_name) != 0) {
-            fwrite(&tmp, sizeof tmp, 1, new_client_db);
+        if (strcmp(name, client.last_name) != 0) {
+            fwrite(&client, sizeof client, 1, new_client_db);
         }
     }
 
@@ -104,6 +139,9 @@ void client_delete(void) {
     fclose(new_client_db);
 
     remove("tmp_client_db.dat");
+
+    puts("Client supprimé avec succès");
+    getchar();
 }
 
 void client_search_by_name(
@@ -123,13 +161,15 @@ void client_search_by_name(
 
     *exists = false;
 
-    while (!feof(client_db) && !*exists) {
+    while (!feof(client_db) && (!*exists)) {
         fread(&tmp, sizeof tmp, 1, client_db);
         *exists = (strcmp(tmp.last_name, name) == 0);
     }
 
-    if (exists && *exists && client) {
-        *client = tmp;
+    if (exists && *exists) {
+        if (client) {
+            *client = tmp;
+        }
     } else {
         client = NULL;
         printf("Le client \"%s\" n'existe pas", name);
@@ -174,39 +214,12 @@ void client_search_by_id(
     fclose(client_db);
 }
 
-void client_inspect(void) {
-    struct client client;
-    char name[50];
-    bool exists;
-
-    fputs("Nom client : ", stdout);
-    fgets(name, sizeof name, stdin);
-    name[strcspn(name, "\n")] = '\0';
-
-    client_search_by_name(name, &client, &exists);
-
-    clear_screen();
-    set_cursor_home();
-
-    if (exists) {
-        puts("Informations client");
-        printf("Identifiant: %hd\n", client.id);
-        printf("Nom: %s\n", client.last_name);
-        printf("Prénom: %s\n", client.first_name);
-        printf("Tel: %s\n", client.phone);
-        printf("Email: %s\n", client.email);
-        address_inspect(&client.address);
-
-        getchar();
-    }
-}
-
 static void client_read(struct client *client) {
     char *tmp;
     size_t len;
     bool valid;
 
-    puts("Saisir informations client :");
+    puts("Saisie informations client");
 
     /* Saisie du nom */
     fputs("Nom : ", stdout);
