@@ -46,6 +46,26 @@ void base_inspect(enum modes mode) {
     }
 }
 
+void base_modify(enum modes mode) {
+    switch (mode) {
+    case MODE_CLIENT:
+        client_modify();
+        break;
+    case MODE_SUPPLIER:
+        supplier_modify();
+        break;
+    case MODE_PRODUCT:
+        product_modify();
+        break;
+    case MODE_SALE:
+        puts("implémenter vente modifier");
+        getchar();
+        break;
+    case MODE_QUIT:
+        break;
+    }
+}
+
 void base_delete(enum modes mode) {
     switch (mode) {
     case MODE_CLIENT:
@@ -58,7 +78,7 @@ void base_delete(enum modes mode) {
         product_delete();
         break;
     case MODE_SALE:
-        puts("implémenter enregistrer transac");
+        puts("implémenter vente supprimer");
         getchar();
         break;
     case MODE_QUIT:

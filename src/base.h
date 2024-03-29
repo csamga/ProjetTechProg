@@ -11,6 +11,7 @@ enum modes {
 
 void base_register(enum modes mode);
 void base_inspect(enum modes mode);
+void base_modify(enum modes mode);
 void base_delete(enum modes mode);
 
 #endif

@@ -282,8 +282,7 @@ int main(void) {
                 base_register(mode);
                 break;
             case ACTION_MODIFY:
-                puts("implémenter base modify");
-                getchar();
+                base_modify(mode);
                 break;
             case ACTION_INSPECT:
                 base_inspect(mode);
