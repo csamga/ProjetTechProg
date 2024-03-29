@@ -21,6 +21,9 @@
     - [x] Fournisseurs
     - [ ] Historique achat par client
     - [ ] Historique ventes par produit
+- [ ] Implémenter confirmation suppression
+- [ ] Implémenter recherche top level
+- [ ] Implémenter résolution conflits recherche
 
 
 Le programme est divisé en 4 modes :
