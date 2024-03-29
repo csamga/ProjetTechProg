@@ -34,8 +34,9 @@ void client_register(void) {
 void client_modify(void) {
     FILE *client_db;
     struct client client;
-    bool exists;
-    char name[32];
+    char name[32], *tmp;
+    size_t len;
+    bool valid;
     
     client_db = fopen("client_db.dat", "rb+");
 
@@ -44,13 +45,21 @@ void client_modify(void) {
         return;
     }
 
+    /* Saisie du nom */
     fputs("Nom : ", stdout);
-    fgets(name, sizeof name, stdin);
-    name[strcspn(name, "\n")] = '\0';
 
-    client_search_by_name(name, &client, &exists);
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
 
-    if (!exists) {
+    strncpy(name, tmp, sizeof name);
+
+    client_search_by_name(name, &client, &valid);
+
+    free(tmp);
+
+    if (!valid) {
         return;
     }
 
@@ -59,25 +68,37 @@ void client_modify(void) {
     fwrite(&client, sizeof client, 1, client_db);
 
     fclose(client_db);
+
+    puts("Client modifié avec succès");
+    getchar();
 }
 
 void client_inspect(void) {
     struct client client;
-    char name[32];
-    bool exists;
+    char name[32], *tmp;
+    size_t len;
+    bool valid;
 
-    fputs("Nom client : ", stdout);
-    fgets(name, sizeof name, stdin);
-    name[strcspn(name, "\n")] = '\0';
+    /* Saisie du nom */
+    fputs("Nom : ", stdout);
 
-    client_search_by_name(name, &client, &exists);
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
+
+    strncpy(name, tmp, sizeof name);
+
+    client_search_by_name(name, &client, &valid);
+
+    free(tmp);
 
     clear_screen();
     set_cursor_home();
 
-    if (exists) {
+    if (valid) {
         puts("Informations client");
-        printf("Identifiant: %hd\n", client.id);
+        printf("Identifiant: %hu\n", client.id);
         printf("Nom: %s\n", client.last_name);
         printf("Prénom: %s\n", client.first_name);
         printf("Tel: %s\n", client.phone);
@@ -107,6 +128,8 @@ void client_delete(void) {
 
     client_search_by_name(name, NULL, &valid);
 
+    free(tmp);
+
     if (!valid) {
         return;
     }
@@ -128,7 +151,7 @@ void client_delete(void) {
     }
 
     while (!feof(old_client_db)) {
-        fread(&tmp, sizeof tmp, 1, old_client_db);
+        fread(&client, sizeof client, 1, old_client_db);
 
         if (strcmp(name, client.last_name) != 0) {
             fwrite(&client, sizeof client, 1, new_client_db);
@@ -138,7 +161,7 @@ void client_delete(void) {
     fclose(old_client_db);
     fclose(new_client_db);
 
-    remove("tmp_client_db.dat");
+    remove("old_client_db.dat");
 
     puts("Client supprimé avec succès");
     getchar();
@@ -207,7 +230,7 @@ void client_search_by_id(
         }
     } else {
         client = NULL;
-        printf("Le client n°%hd n'existe pas", id);
+        printf("Le client n°%hu n'existe pas", id);
         getchar();
     }
 

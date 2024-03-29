@@ -75,19 +75,25 @@ void supplier_modify(void) {
 
 void supplier_inspect(void) {
     struct supplier supplier;
-    char name[32];
-    bool exists;
+    char name[32], *tmp;
+    size_t len;
+    bool valid;
 
-    fputs("Nom fournisseur : ", stdout);
-    fgets(name, sizeof name, stdin);
-    name[strcspn(name, "\n")] = '\0';
+    /* Saisie nom */
+    fputs("Nom : ", stdout);
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
 
-    supplier_search_by_name(name, &supplier, &exists);
+    supplier_search_by_name(name, &supplier, &valid);
+
+    free(tmp);
 
     clear_screen();
     set_cursor_home();
 
-    if (exists) {
+    if (valid) {
         puts("Informations fournisseur");
         printf("Identifiant : %hu\n", supplier.id);
         printf("Nom : %s\n", supplier.last_name);
@@ -214,11 +220,14 @@ void supplier_search_by_id(
         *exists = (tmp.id == id);
     }
 
-    if (exists) {
-        *supplier = tmp;
+    if (exists && *exists) {
+        if (supplier) {
+            *supplier = tmp;
+        }
     } else {
         supplier = NULL;
-        printf("Le supplier n°%hd n'existe pas", id);
+        printf("Le supplier n°%hu n'existe pas", id);
+        getchar();
     }
 
     fclose(supplier_db);

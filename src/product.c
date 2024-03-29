@@ -133,6 +133,8 @@ void product_delete(void) {
 
     product_search_by_name(name, NULL, &valid);
 
+    free(tmp);
+
     if (!valid) {
         return;
     }
@@ -227,11 +229,13 @@ void product_search_by_id(
         *exists = (tmp.id == id);
     }
 
-    if (exists && *exists && product) {
-        *product = tmp;
+    if (exists && *exists) {
+        if (product) {
+            *product = tmp;
+        }
     } else {
         product = NULL;
-        printf("Le product n°%hd n'existe pas", id);
+        printf("Le product n°%hu n'existe pas", id);
         getchar();
     }
 
