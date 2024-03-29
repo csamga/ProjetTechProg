@@ -1,10 +1,11 @@
 #include "supplier.h"
+#include "input.h"
 
 #include <string.h>
 
-static short n_supplier = 0;
+static unsigned short n_supplier = 0;
 
-static struct supplier supplier_read(void);
+static void supplier_read(struct supplier *supplier);
 
 void supplier_register(void) {
     FILE *supplier_db;
@@ -17,31 +18,38 @@ void supplier_register(void) {
         return;
     }
 
-    supplier = supplier_read();
+    supplier_read(&supplier);
     supplier.id = n_supplier++;
 
     fwrite(&supplier, sizeof supplier, 1, supplier_db);
 
     fclose(supplier_db);
+
+    puts("Fournisseur enregistré avec succès");
+    getchar();
 }
 
 void supplier_inspect(void) {
     struct supplier supplier;
-    char name[50];
+    char name[32];
     bool exists;
 
-    fputs("Nom supplier : ", stdout);
+    fputs("Nom fournisseur : ", stdout);
     fgets(name, sizeof name, stdin);
     name[strcspn(name, "\n")] = '\0';
 
     supplier_search_by_name(name, &supplier, &exists);
 
     if (exists) {
-        puts("supplier informations:");
-        printf("supplier: %s\n", supplier.name);
-        printf("Phone: %s\n", supplier.phone);
-        printf("Email: %s\n", supplier.email);
-        printf("Address: %s\n", supplier.address);
+        puts("Informations fournisseur");
+        printf("Identifiant : %hu", supplier.id);
+        printf("Nom : %s\n", supplier.last_name);
+        printf("Prénom : %s\n", supplier.first_name);
+        printf("Tel : %s\n", supplier.phone);
+        printf("Email : %s\n", supplier.email);
+        address_inspect(&supplier.address);
+
+        getchar();
     }
 }
 
@@ -64,19 +72,19 @@ void supplier_search_by_name(
 
     while (!feof(supplier_db) && (!*exists)) {
         fread(&tmp, sizeof tmp, 1, supplier_db);
-        *exists = (tmp.name == name);
+        *exists = (strcpy(tmp.last_name, name) == 0);
     }
 
-    if (exists) {
-        *supplier = tmp;
+    if (exists && *exists) {
+        if (supplier) {
+            *supplier = tmp;
+        }
     } else {
-        supplier = NULL;
-        printf("Le supplier nommé %s n'existe pas", name);
+        printf("Le supplier \"%s\" n'existe pas", name);
     }
 
     fclose(supplier_db);  
 }
-
 
 void supplier_search_by_id(
     const unsigned short id,
@@ -110,27 +118,55 @@ void supplier_search_by_id(
     fclose(supplier_db);
 }
 
+static void supplier_read(struct supplier *supplier) {
+    char *tmp;
+    size_t len;
+    bool valid;
 
-static struct supplier supplier_read(void) {
-    struct supplier supplier;
+    puts("Saisie informations fournisseur");
 
-    puts("Enter supplier informations:");
+    /* Saisie du nom */
+    fputs("Nom : ", stdout);
 
-    fputs("Name: ", stdout);
-    fgets(supplier.name, sizeof supplier.name, stdin);
-    supplier.name[strcspn(supplier.name, "\n")] = '\0';
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
 
-    fputs("Phone: ", stdout);
-    fgets(supplier.phone, sizeof supplier.phone, stdin);
-    supplier.phone[strcspn(supplier.phone, "\n")] = '\0';
+    strncpy(supplier->last_name, tmp, sizeof supplier->last_name);
 
-    fputs("Email: ", stdout);
-    fgets(supplier.email, sizeof supplier.email, stdin);
-    supplier.email[strcspn(supplier.email, "\n")] = '\0';
+    /* Saisie du prénom */
+    fputs("Prénom : ", stdout);
 
-    fputs("Address: ", stdout);
-    fgets(supplier.address, sizeof supplier.address, stdin);
-    supplier.address[strcspn(supplier.address, "\n")] = '\0';
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
 
-    return supplier;
+    strncpy(supplier->first_name, tmp, sizeof supplier->first_name);
+
+    /* Saisie du numéro de téléphone */
+    fputs("Tel : ", stdout);
+
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_phone(tmp, len);
+    } while (!valid);
+
+    strncpy(supplier->phone, tmp, sizeof supplier->phone);
+
+    /* Saisie de l'adresse email */
+    fputs("Email : ", stdout);
+
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_email(tmp, len);
+    } while (!valid);
+
+    strncpy(supplier->email, tmp, sizeof supplier->email);
+
+    /* Saisie de l'adresse */
+    address_read(&supplier->address);
+
+    free(tmp);
 }

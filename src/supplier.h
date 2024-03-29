@@ -1,15 +1,18 @@
 #ifndef SUPPLIER_H_INCLUDED
 #define SUPPLIER_H_INCLUDED
 
+#include "address.h"
+
 #include <stdbool.h>
 #include <stdio.h>
 
 struct supplier {
-    short id;
-    char name[50];
-    char phone[12];
-    char email[50];
-    char address[50];
+    unsigned short id;
+    char last_name[32];
+    char first_name[32];
+    char phone[11];
+    char email[64];
+    struct address address;
 };
 
 void supplier_register(void);
