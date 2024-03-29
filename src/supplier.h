@@ -4,7 +4,6 @@
 #include "address.h"
 
 #include <stdbool.h>
-#include <stdio.h>
 
 struct supplier {
     unsigned short id;
@@ -16,6 +15,9 @@ struct supplier {
 };
 
 void supplier_register(void);
+void supplier_modify(void);
+void supplier_inspect(void);
+void supplier_delete(void);
 
 void supplier_search_by_name(
     const char *name,
@@ -28,7 +30,5 @@ void supplier_search_by_id(
     struct supplier *supplier,
     bool *exists
 );
-
-void supplier_inspect(void);
 
 #endif
