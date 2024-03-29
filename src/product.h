@@ -4,21 +4,22 @@
 #include <stdbool.h>
 
 struct product {
-    short id;
-    char name[50];
-    char brand[50];
+    unsigned short id;
+    char name[32];
+    char brand[32];
+    char origin[32];
     float price_euro;
-    char origin[50];
     bool liquid;
     union juan {
         float mass_kg;
         float volume_l;
     } juan;
-    unsigned short stock;
+    /* unsigned short stock; */
 };
 
 void product_register(void);
 void product_modify(void);
+void product_inspect(void);
 void product_delete(void);
 
 void product_search_by_name(
@@ -32,7 +33,5 @@ void product_search_by_id(
     struct product *product,
     bool *exists
 );
-
-void product_inspect(void);
 
 #endif

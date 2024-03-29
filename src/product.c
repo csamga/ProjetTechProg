@@ -1,11 +1,13 @@
 #include "product.h"
+#include "input.h"
+#include "terminal.h"
 
 #include <stdio.h>
 #include <string.h>
 
-static short n_products = 0;
+static unsigned short n_products = 0;
 
-static struct product product_read(void);
+static void product_read(struct product *product);
 
 void product_register(void) {
     FILE *product_db;
@@ -18,19 +20,23 @@ void product_register(void) {
         return;
     }
 
-    product = product_read();
+    product_read(&product);
     product.id = n_products++;
 
     fwrite(&product, sizeof product, 1, product_db);
 
     fclose(product_db);
+
+    puts("Produit enregistré avec succès");
+    getchar();
 }
 
 void product_modify(void) {
     FILE *product_db;
     struct product product;
-    bool exists;
-    char name[50];
+    char name[32], *tmp;
+    size_t len;
+    bool valid;
     
     product_db = fopen("product_db.dat", "rb+");
 
@@ -39,66 +45,129 @@ void product_modify(void) {
         return;
     }
 
+    /* Saisie du nom */
     fputs("Nom : ", stdout);
-    fgets(name, sizeof name, stdin);
-    name[strcspn(name, "\n")] = '\0';
 
-    product_search_by_name(name, &product, &exists);
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
 
-    if (!exists) {
+    strncpy(name, tmp, sizeof name);
+
+    product_search_by_name(name, &product, &valid);
+
+    free(tmp);
+
+    if (!valid) {
         return;
     }
 
-    product = product_read();
+    product_read(&product);
 
     fwrite(&product, sizeof product, 1, product_db);
 
     fclose(product_db);
+
+    puts("Produit modifié avec succès");
+    getchar();
+}
+
+void product_inspect(void) {
+    struct product product;
+    char name[32], *tmp;
+    size_t len;
+    bool valid;
+
+    /* Saisie du nom */
+    fputs("Nom : ", stdout);
+
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
+
+    strncpy(name, tmp, sizeof name);
+
+    product_search_by_name(name, &product, &valid);
+
+    free(tmp);
+
+    clear_screen();
+    set_cursor_home();
+
+    if (valid) {
+        puts("Informations produit");
+        printf("Identifiant: %hu\n", product.id);
+        printf("Nom: %s\n", product.name);
+        printf("Marque: %s\n", product.brand);
+        printf("Origine: %s\n", product.origin);
+        printf("Prix: %.2f€\n", product.price_euro);
+
+        if (product.liquid) {
+            printf("Volume: %.3fL\n", product.juan.volume_l);
+        } else {
+            printf("Masse: %.3fkg\n", product.juan.mass_kg);
+        }
+
+        getchar();
+    }
 }
 
 void product_delete(void) {
     FILE *old_product_db, *new_product_db;
-    char name[50];
-    struct product tmp;
-    bool exists;
+    struct product product;
+    char name[32], *tmp;
+    size_t len;
+    bool valid;
 
+    /* Saisie du nom */
     fputs("Nom : ", stdout);
-    fgets(name, sizeof name, stdin);
-    name[strcspn(name, "\n")] = '\0';
 
-    product_search_by_name(name, NULL, &exists);
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
 
-    if (!exists) {
+    strncpy(name, tmp, sizeof name);
+
+    product_search_by_name(name, NULL, &valid);
+
+    if (!valid) {
         return;
     }
 
-    old_product_db = fopen("product_db.dat", "rb");
+    rename("product_db.dat", "old_product_db.dat");
+
+    old_product_db = fopen("old_product_db.dat", "rb");
 
     if (old_product_db == NULL) {
+        fprintf(stderr, "error: failed to open %s\n", "old_product_db.dat");
+        return;
+    }
+
+    new_product_db = fopen("product_db.dat", "a");
+
+    if (new_product_db == NULL) {
         fprintf(stderr, "error: failed to open %s\n", "product_db.dat");
         return;
     }
 
-    new_product_db = fopen("tmp_product_db.dat", "a");
-
-    if (new_product_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "new_product_db.dat");
-        return;
-    }
-
     while (!feof(old_product_db)) {
-        fread(&tmp, sizeof tmp, 1, old_product_db);
+        fread(&product, sizeof product, 1, old_product_db);
 
-        if (strcmp(name, tmp.name) != 0) {
-            fwrite(&tmp, sizeof tmp, 1, new_product_db);
+        if (strcmp(name, product.name) != 0) {
+            fwrite(&product, sizeof product, 1, new_product_db);
         }
     }
 
     fclose(old_product_db);
     fclose(new_product_db);
 
-    remove("product_db.dat");
-    rename("tmp_product_db.dat", "product_db.dat");
+    remove("old_product_db.dat");
+
+    puts("Produit supprimé avec succès");
+    getchar();
 }
 
 void product_search_by_name(
@@ -118,7 +187,7 @@ void product_search_by_name(
 
     *exists = false;
 
-    while (!feof(product_db) && !*exists) {
+    while (!feof(product_db) && (!*exists)) {
         fread(&tmp, sizeof tmp, 1, product_db);
         *exists = (strcmp(tmp.name, name) == 0);
     }
@@ -130,6 +199,7 @@ void product_search_by_name(
     } else {
         product = NULL;
         printf("Le produit \"%s\" n'existe pas", name);
+        getchar();
     }
 
     fclose(product_db);
@@ -162,76 +232,71 @@ void product_search_by_id(
     } else {
         product = NULL;
         printf("Le product n°%hd n'existe pas", id);
+        getchar();
     }
 
     fclose(product_db);
 }
 
-void product_inspect(void) {
-    struct product product;
-    char name[50];
-    bool exists;
+static void product_read(struct product *product) {
+    char *tmp, c;
+    size_t len;
+    bool valid;
 
-    fputs("Nom produit : ", stdout);
-    fgets(name, sizeof name, stdin);
-    name[strcspn(name, "\n")] = '\0';
+    puts("Saisie informations produit");
 
-    product_search_by_name(name, &product, &exists);
+    /* Saisie du nom */
+    fputs("Nom : ", stdout);
 
-    if (exists) {
-        puts("Product informations:");
-        printf("Product: %s\n", product.name);
-        printf("Brand: %s\n", product.brand);
-        printf("Price: %.2f€\n", product.price_euro);
-        printf("Origin: %s\n", product.origin);
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
 
-        if (product.liquid) {
-            printf("Volume: %.3fL\n", product.juan.volume_l);
-        } else {
-            printf("Mass: %.3fkg\n", product.juan.mass_kg);
-        }
-    }
-}
+    strncpy(product->name, tmp, sizeof product->name);
 
-static struct product product_read(void) {
-    struct product product;
-    char c;
+    /* Saisie de la marque */
+    fputs("Marque : ", stdout);
 
-    puts("Enter product informations:");
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
 
-    fputs("Name: ", stdout);
-    fgets(product.name, sizeof product.name, stdin);
-    product.name[strcspn(product.name, "\n")] = '\0';
+    strncpy(product->brand, tmp, sizeof product->brand);
 
-    fputs("Brand: ", stdout);
-    fgets(product.brand, sizeof product.brand, stdin);
-    product.brand[strcspn(product.brand, "\n")] = '\0';
+    /* Saisie de la provenance */
+    fputs("Origine : ", stdout);
 
-    fputs("Price (€): ", stdout);
-    scanf("%f", &(product.price_euro));
+    do {
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_name(tmp, len);
+    } while (!valid);
+
+    strncpy(product->origin, tmp, sizeof product->origin);
+
+    /* Saisie du prix */
+    fputs("Prix (€) : ", stdout);
+    scanf("%f", &(product->price_euro));
     getchar();
 
-    fputs("Origin: ", stdout);
-    fgets(product.origin, sizeof product.origin, stdin);
-    product.origin[strcspn(product.origin, "\n")] = '\0';
+    /* Saisie du type (liquide/solide) */
 
-    fputs("Liquid (y/n): ", stdout);
+    fputs("Liquide (y/n) : ", stdout);
     scanf("%c", &c);
     getchar();
 
     if (c == 'y') {
-        product.liquid = true;
-        fputs("Volume (L): ", stdout);
-        scanf("%f", &(product.juan.volume_l));
+        product->liquid = true;
+        fputs("Volume (L) : ", stdout);
+        scanf("%f", &(product->juan.volume_l));
         getchar();
     } else {
-        product.liquid = false;
-        fputs("Mass (kg): ", stdout);
-        scanf("%f", &(product.juan.mass_kg));
+        product->liquid = false;
+        fputs("Masse (kg) : ", stdout);
+        scanf("%f", &(product->juan.mass_kg));
         getchar();
     }
 
-    puts("");
-
-    return product;
+    free(tmp);
 }
