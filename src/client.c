@@ -134,6 +134,12 @@ void client_delete(void) {
         return;
     }
 
+    valid = input_confirm_delete("Voulez vous vraiment supprimer le client ?");
+
+    if (!valid) {
+        return;
+    }
+
     rename("client_db.dat", "old_client_db.dat");
 
     old_client_db = fopen("old_client_db.dat", "rb");

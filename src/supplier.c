@@ -131,6 +131,12 @@ void supplier_delete(void) {
         return;
     }
 
+    valid = input_confirm_delete("Voulez vous vraiment supprimer le produit ?");
+
+    if (!valid) {
+        return;
+    }
+
     rename("supplier_db.dat", "old_supplier_db.dat");
 
     old_supplier_db = fopen("old_supplier_db.dat", "rb");

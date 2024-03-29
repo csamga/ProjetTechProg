@@ -1,5 +1,6 @@
 #include "base.h"
 #include "terminal.h"
+#include "input.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -55,19 +56,13 @@ void list_print(char *list[], short n, int base) {
     free(buf);
 }
 
-void flush_stdin(void) {
-    int c;
-
-    while (((c = getchar()) != '\n') && (c != EOF)) {}
-}
-
 int acquire_input(void) {
     int choice;
 
     choice = getchar();
     choice -= '1';
 
-    flush_stdin();
+    input_flush_stdin();
 
     return choice;
 }

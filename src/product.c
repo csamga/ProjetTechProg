@@ -139,6 +139,12 @@ void product_delete(void) {
         return;
     }
 
+    valid = input_confirm_delete("Voulez vous vraiment supprimer le produit ?");
+
+    if (!valid) {
+        return;
+    }
+
     rename("product_db.dat", "old_product_db.dat");
 
     old_product_db = fopen("old_product_db.dat", "rb");

@@ -96,3 +96,42 @@ bool input_validate_zip_code(char *input, size_t len) {
     return valid;
 }
 
+bool input_confirm_delete(const char *message) {
+    char c;
+    bool valid, confirm;
+
+    do {
+        printf("%s (o/N)", message);
+        scanf("%c", &c);
+
+        switch (c) {
+        case '\n':
+            valid = true;
+            confirm = true;
+            continue;
+        case 'o':
+        case 'O':
+            valid = true;
+            confirm = true;
+            break;
+        case 'n':
+        case 'N':
+            valid = true;
+            confirm = false;
+            break;
+        default:
+            valid = false;
+        }
+
+        input_flush_stdin();
+    } while (!valid);
+
+    return confirm;
+}
+
+void input_flush_stdin(void) {
+    int c;
+
+    while (((c = getchar()) != '\n') && (c != EOF)) {}
+}
+
