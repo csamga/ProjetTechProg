@@ -289,8 +289,7 @@ int main(void) {
                 base_inspect(mode);
                 break;
             case ACTION_DELETE:
-                puts("implémenter base delete");
-                getchar();
+                base_delete(mode);
                 break;
             case ACTION_RETURN:
                 break;
