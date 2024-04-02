@@ -4,6 +4,11 @@
 
 #define CSI "\x1b["
 
+void new_page(void) {
+    clear_screen();
+    set_cursor_home();
+}
+
 void clear_screen(void) {
     fputs(CSI "2J", stdout);
 }

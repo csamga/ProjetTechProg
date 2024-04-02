@@ -12,7 +12,7 @@ struct client {
     char phone[12];
     char email[64];
     struct address address;
-    /* char purchase_db_file_name[32]; */
+    char purchase_db_file_name[64];
 };
 
 void client_register(void);

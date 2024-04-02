@@ -8,6 +8,8 @@ enum screen_buffer {
     screen_buffer_alternative
 };
 
+void new_page(void);
+
 void clear_screen(void);
 void use_screen_buffer(enum screen_buffer sb);
 void set_cursor_pos(short x, short y);

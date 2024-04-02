@@ -9,11 +9,7 @@ struct product {
     char brand[32];
     char origin[32];
     float price_euro;
-    bool liquid;
-    union juan {
-        float mass_kg;
-        float volume_l;
-    } juan;
+    float mass_kg_vol_l;
     /* unsigned short stock; */
 };
 

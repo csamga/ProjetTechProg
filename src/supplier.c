@@ -1,11 +1,19 @@
 #include "supplier.h"
 #include "input.h"
 #include "terminal.h"
+#include "utils.h"
+#include "market.h"
 
 #include <string.h>
 #include <stdio.h>
 
-static unsigned short n_supplier = 0;
+static char *field_str[] = {
+    "Nom",
+    "Prenom",
+    "Tel",
+    "Email",
+    "Retour"
+};
 
 static void supplier_read(struct supplier *supplier);
 
@@ -21,12 +29,13 @@ void supplier_register(void) {
     }
 
     supplier_read(&supplier);
-    supplier.id = n_supplier++;
+    supplier.id = market_get_n_suppliers();
+    market_supplier_added();
 
     fwrite(&supplier, sizeof supplier, 1, supplier_db);
-
     fclose(supplier_db);
 
+    new_page();
     puts("Fournisseur enregistré avec succès");
     getchar();
 }
@@ -34,9 +43,9 @@ void supplier_register(void) {
 void supplier_modify(void) {
     FILE *supplier_db;
     struct supplier supplier;
-    bool valid;
-    char name[32], *tmp;
-    size_t len;
+    bool valid, finished;
+    char name[32];
+    int choice;
 
     supplier_db = fopen("supplier_db.dat", "rb+");
 
@@ -46,54 +55,64 @@ void supplier_modify(void) {
     }
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(name, tmp, sizeof name);
-
+    input_read_last_name(name, sizeof name);
     supplier_search_by_name(name, &supplier, &valid);
-
-    free(tmp);
 
     if (!valid) {
         return;
     }
 
-    supplier_read(&supplier);
+    do {
+        new_page();
+        puts("Champ à modifier");
+        list_print(field_str, 5, 1);
+
+        choice = acquire_input();
+        finished = false;
+        new_page();
+
+        switch (choice) {
+        case 0:
+            printf("Ancien nom : %s\n", supplier.last_name);
+            input_read_last_name(supplier.last_name, sizeof supplier.last_name);
+            break;
+        case 1:
+            printf("Ancien prénom : %s\n", supplier.first_name);
+            input_read_first_name(supplier.first_name, sizeof supplier.first_name);
+            break;
+        case 2:
+            printf("Ancien tel : %s\n", supplier.phone);
+            input_read_phone(supplier.phone, sizeof supplier.phone);
+            break;
+        case 3:
+            printf("Ancien email : %s\n", supplier.email);
+            input_read_email(supplier.email, sizeof supplier.email);
+            break;
+        case 4:
+            finished = true;
+        }
+    } while (!finished);
 
     fwrite(&supplier, sizeof supplier, 1, supplier_db);
-
     fclose(supplier_db);
 
+    new_page();
     puts("Fournisseur modifié avec succès");
     getchar();
 }
 
 void supplier_inspect(void) {
     struct supplier supplier;
-    char name[32], *tmp;
-    size_t len;
+    char name[32];
     bool valid;
 
     /* Saisie nom */
-    fputs("Nom : ", stdout);
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
+    input_read_last_name(name, sizeof name);
     supplier_search_by_name(name, &supplier, &valid);
 
-    free(tmp);
-
-    clear_screen();
-    set_cursor_home();
-
     if (valid) {
+        new_page();
+
         puts("Informations fournisseur");
         printf("Identifiant : %hu\n", supplier.id);
         printf("Nom : %s\n", supplier.last_name);
@@ -110,22 +129,11 @@ void supplier_delete(void) {
     FILE *old_supplier_db, *new_supplier_db;
     struct supplier supplier;
     bool valid;
-    char name[32], *tmp;
-    size_t len;
+    char name[32];
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(name, tmp, sizeof name);
-
+    input_read_last_name(name, sizeof name);
     supplier_search_by_name(name, NULL, &valid);
-
-    free(tmp);
 
     if (!valid) {
         return;
@@ -166,6 +174,7 @@ void supplier_delete(void) {
 
     remove("old_supplier_db.dat");
 
+    new_page();
     puts("Fournisseur supprimé avec succès");
     getchar();
 }
@@ -240,54 +249,20 @@ void supplier_search_by_id(
 }
 
 static void supplier_read(struct supplier *supplier) {
-    char *tmp;
-    size_t len;
-    bool valid;
-
     puts("Saisie informations fournisseur");
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(supplier->last_name, tmp, sizeof supplier->last_name);
+    input_read_last_name(supplier->last_name, sizeof supplier->last_name);
 
     /* Saisie du prénom */
-    fputs("Prénom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(supplier->first_name, tmp, sizeof supplier->first_name);
+    input_read_first_name(supplier->first_name, sizeof supplier->first_name);
 
     /* Saisie du numéro de téléphone */
-    fputs("Tel : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_phone(tmp, len);
-    } while (!valid);
-
-    strncpy(supplier->phone, tmp, sizeof supplier->phone);
+    input_read_phone(supplier->phone, sizeof supplier->phone);
 
     /* Saisie de l'adresse email */
-    fputs("Email : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_email(tmp, len);
-    } while (!valid);
-
-    strncpy(supplier->email, tmp, sizeof supplier->email);
+    input_read_email(supplier->email, sizeof supplier->email);
 
     /* Saisie de l'adresse */
     address_read(&supplier->address);
-
-    free(tmp);
 }

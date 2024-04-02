@@ -17,14 +17,19 @@
     - [ ] Transaction
 - [ ] Implémenter bases de données
     - [x] Client
-    - [ ] Produits
+    - [x] Produits
     - [x] Fournisseurs
     - [ ] Historique achat par client
+        - [ ] Implémenter création fichier par client
     - [ ] Historique ventes par produit
 - [x] Implémenter confirmation suppression
 - [ ] Implémenter recherche top level
+- [ ] Implémenter choix recherche
 - [ ] Implémenter résolution conflits recherche
-
+- [ ] Nom rue peut contenir chiffres
+- [ ] Remonter curseur quand input invalide
+- [ ] Modifier champs adresse
+- [ ] Simplifier fonctions market
 
 Le programme est divisé en 4 modes :
 - Client

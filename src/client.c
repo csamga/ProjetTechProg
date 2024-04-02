@@ -1,11 +1,19 @@
 #include "client.h"
 #include "input.h"
 #include "terminal.h"
+#include "market.h"
+#include "utils.h"
 
 #include <string.h>
 #include <stdio.h>
 
-static unsigned short n_clients = 0;
+static char *field_str[] = {
+    "Nom",
+    "Prenom",
+    "Tel",
+    "Email",
+    "Retour"
+};
 
 static void client_read(struct client *client);
 
@@ -13,20 +21,21 @@ void client_register(void) {
     FILE *client_db;
     struct client client;
     
-    client_db = fopen("client_db.dat", "ab");
+    client_db = fopen(CLIENT_DB, "ab");
 
     if (client_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
+        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
         return;
     }
 
     client_read(&client);
-    client.id = n_clients++;
+    client.id = market_get_n_clients();
+    market_client_added();
 
     fwrite(&client, sizeof client, 1, client_db);
-
     fclose(client_db);
 
+    new_page();
     puts("Client créé avec succès");
     getchar();
 }
@@ -34,75 +43,82 @@ void client_register(void) {
 void client_modify(void) {
     FILE *client_db;
     struct client client;
-    char name[32], *tmp;
-    size_t len;
-    bool valid;
+    char name[32];
+    bool valid, finished;
+    int choice;
     
-    client_db = fopen("client_db.dat", "rb+");
+    client_db = fopen(CLIENT_DB, "rb+");
 
     if (client_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
+        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
         return;
     }
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(name, tmp, sizeof name);
-
+    input_read_last_name(name, sizeof name);
     client_search_by_name(name, &client, &valid);
-
-    free(tmp);
 
     if (!valid) {
         return;
     }
 
-    client_read(&client);
+    do {
+        new_page();
+        puts("Champ à modifier");
+        list_print(field_str, 5, 1);
+
+        choice = acquire_input();
+        finished = false;
+        new_page();
+
+        switch (choice) {
+        case 0:
+            printf("Ancien nom : %s\n", client.last_name);
+            input_read_last_name(client.last_name, sizeof client.last_name);
+            break;
+        case 1:
+            printf("Ancien prénom : %s\n", client.first_name);
+            input_read_first_name(client.first_name, sizeof client.first_name);
+            break;
+        case 2:
+            printf("Ancien tel : %s\n", client.phone);
+            input_read_phone(client.phone, sizeof client.phone);
+            break;
+        case 3:
+            printf("Ancien email : %s\n", client.email);
+            input_read_email(client.email, sizeof client.email);
+            break;
+        case 4:
+            finished = true;
+        }
+    } while (!finished);
 
     fwrite(&client, sizeof client, 1, client_db);
-
     fclose(client_db);
 
+    new_page();
     puts("Client modifié avec succès");
     getchar();
 }
 
 void client_inspect(void) {
     struct client client;
-    char name[32], *tmp;
-    size_t len;
+    char name[32];
     bool valid;
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(name, tmp, sizeof name);
-
+    input_read_last_name(name, sizeof name);
     client_search_by_name(name, &client, &valid);
 
-    free(tmp);
-
-    clear_screen();
-    set_cursor_home();
-
     if (valid) {
+        new_page();
+
         puts("Informations client");
-        printf("Identifiant: %hu\n", client.id);
-        printf("Nom: %s\n", client.last_name);
-        printf("Prénom: %s\n", client.first_name);
-        printf("Tel: %s\n", client.phone);
-        printf("Email: %s\n", client.email);
+        printf("Identifiant : %hu\n", client.id);
+        printf("Nom : %s\n", client.last_name);
+        printf("Prénom : %s\n", client.first_name);
+        printf("Tel : %s\n", client.phone);
+        printf("Email : %s\n", client.email);
         address_inspect(&client.address);
 
         getchar();
@@ -112,23 +128,12 @@ void client_inspect(void) {
 void client_delete(void) {
     FILE *old_client_db, *new_client_db;
     struct client client;
-    char name[32], *tmp;
+    char name[32];
     bool valid;
-    size_t len;
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(name, tmp, sizeof name);
-
+    input_read_first_name(name, sizeof name);
     client_search_by_name(name, NULL, &valid);
-
-    free(tmp);
 
     if (!valid) {
         return;
@@ -140,19 +145,19 @@ void client_delete(void) {
         return;
     }
 
-    rename("client_db.dat", "old_client_db.dat");
+    rename(CLIENT_DB, "db/old_client_db.dat");
 
-    old_client_db = fopen("old_client_db.dat", "rb");
+    old_client_db = fopen("db/old_client_db.dat", "rb");
 
     if (old_client_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "old_client_db.dat");
+        fputs("erreur: impossible d'ouvrir db/old_client_db.dat\n", stderr);
         return;
     }
 
-    new_client_db = fopen("client_db.dat", "a");
+    new_client_db = fopen(CLIENT_DB, "a");
 
     if (new_client_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
+        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
         return;
     }
 
@@ -167,8 +172,9 @@ void client_delete(void) {
     fclose(old_client_db);
     fclose(new_client_db);
 
-    remove("old_client_db.dat");
+    remove("db/old_client_db.dat");
 
+    new_page();
     puts("Client supprimé avec succès");
     getchar();
 }
@@ -181,10 +187,10 @@ void client_search_by_name(
     FILE *client_db;
     struct client tmp;
 
-    client_db = fopen("client_db.dat", "rb");
+    client_db = fopen(CLIENT_DB, "rb");
 
     if (client_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
+        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
         return;
     }
 
@@ -216,10 +222,10 @@ void client_search_by_id(
     FILE *client_db;
     struct client tmp;
 
-    client_db = fopen("client_db.dat", "rb");
+    client_db = fopen(CLIENT_DB, "rb");
 
     if (client_db == NULL) {
-        fprintf(stderr, "error: failed to open %s\n", "client_db.dat");
+        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
         return;
     }
 
@@ -244,54 +250,20 @@ void client_search_by_id(
 }
 
 static void client_read(struct client *client) {
-    char *tmp;
-    size_t len;
-    bool valid;
-
     puts("Saisie informations client");
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(client->last_name, tmp, sizeof client->last_name);
+    input_read_last_name(client->last_name, sizeof client->last_name);
 
     /* Saisie du prénom */
-    fputs("Prénom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(client->first_name, tmp, sizeof client->first_name);
+    input_read_first_name(client->first_name, sizeof client->first_name);
 
     /* Saisie du numéro de téléphone */
-    fputs("Tel : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_phone(tmp, len);
-    } while (!valid);
-
-    strncpy(client->phone, tmp, sizeof client->phone);
+    input_read_phone(client->phone, sizeof client->phone);
 
     /* Saisie de l'adresse email */
-    fputs("Email : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_email(tmp, len);
-    } while (false);
-
-    strncpy(client->email, tmp, sizeof client->email);
+    input_read_email(client->email, sizeof client->email);
 
     /* Saisie de l'adresse */
     address_read(&client->address);
-
-    free(tmp);
 }

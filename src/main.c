@@ -1,11 +1,10 @@
 #include "base.h"
 #include "terminal.h"
 #include "input.h"
+#include "utils.h"
 
 #include <stdbool.h>
 #include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 #define COUNTOF(x) (sizeof (x) / sizeof *(x))
 
@@ -29,47 +28,6 @@ enum search_mode {
     SEARCH_ID,
     SEARCH_NAME
 };
-
-void list_print(char *list[], short n, int base) {
-#define CHUNK 256
-    short i;
-    char tmp[CHUNK];
-    char *buf;
-    int buf_len, written, tmp_written;
-
-    buf = malloc(CHUNK * (sizeof *buf));
-    buf_len = CHUNK;
-    written = 0;
-
-    for (i = 0; i < n; i++) {
-        tmp_written = sprintf(tmp, "%hd: %s\n", base + i, list[i]);
-
-        if (written + tmp_written >= buf_len) {
-            buf = realloc(buf, (buf_len * 2) * (sizeof *buf));
-        }
-
-        strcpy(buf + written, tmp);
-        written += tmp_written;
-    }
-
-    fputs(buf, stdout);
-    free(buf);
-}
-
-int acquire_input(void) {
-    int choice;
-
-    choice = getchar();
-    choice -= '1';
-
-    input_flush_stdin();
-
-    return choice;
-}
-
-bool validate_input(int choice, int first, int last) {
-    return (choice >= first) && (choice <= last);
-}
 
 void process_input(enum modes *mode) {
     int choice;
@@ -215,10 +173,10 @@ int main(void) {
         "Consulter historique",
     };
 
-    char *action_rech_str[2] = {
+    /* char *action_rech_str[2] = {
         "Recherche par NOM",
         "Recherche par ID"
-    };
+    }; */
 
     bool quit;
 

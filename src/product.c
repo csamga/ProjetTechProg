@@ -1,11 +1,19 @@
 #include "product.h"
 #include "input.h"
 #include "terminal.h"
+#include "utils.h"
+#include "market.h"
 
 #include <stdio.h>
 #include <string.h>
 
-static unsigned short n_products = 0;
+static char *field_str[] = {
+    "Nom",
+    "Marque",
+    "Origine",
+    "Prix",
+    "Retour"
+};
 
 static void product_read(struct product *product);
 
@@ -21,12 +29,13 @@ void product_register(void) {
     }
 
     product_read(&product);
-    product.id = n_products++;
+    product.id = market_get_n_products();
+    market_product_added();
 
     fwrite(&product, sizeof product, 1, product_db);
-
     fclose(product_db);
 
+    new_page();
     puts("Produit enregistré avec succès");
     getchar();
 }
@@ -34,9 +43,9 @@ void product_register(void) {
 void product_modify(void) {
     FILE *product_db;
     struct product product;
-    char name[32], *tmp;
-    size_t len;
-    bool valid;
+    char name[32];
+    bool valid, finished;
+    int choice;
     
     product_db = fopen("product_db.dat", "rb+");
 
@@ -45,70 +54,72 @@ void product_modify(void) {
         return;
     }
 
-    /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(name, tmp, sizeof name);
-
+    input_read_last_name(name, sizeof name);
     product_search_by_name(name, &product, &valid);
-
-    free(tmp);
 
     if (!valid) {
         return;
     }
 
-    product_read(&product);
+    do {
+        new_page();
+        puts("Champ à modifier");
+        list_print(field_str, 5, 1);
+
+        choice = acquire_input();
+        finished = false;
+        new_page();
+
+        switch (choice) {
+        case 0:
+            printf("Ancien nom : %s\n", product.name);
+            input_read_last_name(product.name, sizeof product.name);
+            break;
+        case 1:
+            printf("Ancienne marque : %s\n", product.brand);
+            input_read_last_name(product.brand, sizeof product.brand);
+            break;
+        case 2:
+            printf("Ancienne origine : %s\n", product.origin);
+            input_read_last_name(product.origin, sizeof product.origin);
+            break;
+        case 3:
+            printf("Ancien prix : %f\n", product.price_euro);
+            input_read_price(&product.price_euro);
+            break;
+        case 4:
+            finished = true;
+        }
+    } while (!finished);
+
 
     fwrite(&product, sizeof product, 1, product_db);
-
     fclose(product_db);
 
+    new_page();
     puts("Produit modifié avec succès");
     getchar();
 }
 
 void product_inspect(void) {
     struct product product;
-    char name[32], *tmp;
-    size_t len;
+    char name[32];
     bool valid;
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(name, tmp, sizeof name);
-
+    input_read_last_name(name, sizeof name);
     product_search_by_name(name, &product, &valid);
 
-    free(tmp);
-
-    clear_screen();
-    set_cursor_home();
-
     if (valid) {
-        puts("Informations produit");
-        printf("Identifiant: %hu\n", product.id);
-        printf("Nom: %s\n", product.name);
-        printf("Marque: %s\n", product.brand);
-        printf("Origine: %s\n", product.origin);
-        printf("Prix: %.2f€\n", product.price_euro);
+        new_page();
 
-        if (product.liquid) {
-            printf("Volume: %.3fL\n", product.juan.volume_l);
-        } else {
-            printf("Masse: %.3fkg\n", product.juan.mass_kg);
-        }
+        puts("Informations produit");
+        printf("Identifiant : %hu\n", product.id);
+        printf("Nom : %s\n", product.name);
+        printf("Marque : %s\n", product.brand);
+        printf("Origine : %s\n", product.origin);
+        printf("Prix : %.2f€\n", product.price_euro);
+        printf("Masse/volume (kg/L) : %.3f\n", product.mass_kg_vol_l);
 
         getchar();
     }
@@ -117,23 +128,12 @@ void product_inspect(void) {
 void product_delete(void) {
     FILE *old_product_db, *new_product_db;
     struct product product;
-    char name[32], *tmp;
-    size_t len;
+    char name[32];
     bool valid;
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(name, tmp, sizeof name);
-
+    input_read_last_name(name, sizeof name);
     product_search_by_name(name, NULL, &valid);
-
-    free(tmp);
 
     if (!valid) {
         return;
@@ -174,6 +174,7 @@ void product_delete(void) {
 
     remove("old_product_db.dat");
 
+    new_page();
     puts("Produit supprimé avec succès");
     getchar();
 }
@@ -249,64 +250,20 @@ void product_search_by_id(
 }
 
 static void product_read(struct product *product) {
-    char *tmp, c;
-    size_t len;
-    bool valid;
-
     puts("Saisie informations produit");
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(product->name, tmp, sizeof product->name);
+    input_read_last_name(product->name, sizeof product->name);
 
     /* Saisie de la marque */
-    fputs("Marque : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(product->brand, tmp, sizeof product->brand);
+    input_read_last_name(product->brand, sizeof product->brand);
 
     /* Saisie de la provenance */
-    fputs("Origine : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(product->origin, tmp, sizeof product->origin);
+    input_read_last_name(product->origin, sizeof product->origin);
 
     /* Saisie du prix */
-    fputs("Prix (€) : ", stdout);
-    scanf("%f", &(product->price_euro));
-    getchar();
+    input_read_price(&product->price_euro);
 
-    /* Saisie du type (liquide/solide) */
-
-    fputs("Liquide (y/n) : ", stdout);
-    scanf("%c", &c);
-    getchar();
-
-    if (c == 'y') {
-        product->liquid = true;
-        fputs("Volume (L) : ", stdout);
-        scanf("%f", &(product->juan.volume_l));
-        getchar();
-    } else {
-        product->liquid = false;
-        fputs("Masse (kg) : ", stdout);
-        scanf("%f", &(product->juan.mass_kg));
-        getchar();
-    }
-
-    free(tmp);
+    /* Saisie de la masse/volume */
+    input_read_price(&product->mass_kg_vol_l);
 }

@@ -9,6 +9,8 @@ src = $(wildcard $(src_dir)/*.c)
 obj = $(patsubst $(src_dir)/%.c,$(tmp_dir)/%.o,$(src))
 projet = $(bin_dir)/projet
 
+projet: $(projet) fichiers
+
 $(projet): $(obj)
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -o $@ $^
@@ -16,6 +18,11 @@ $(projet): $(obj)
 $(tmp_dir)/%.o: $(src_dir)/%.c
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+fichiers:
+	-@mkdir db 2>/dev/null || true
+	-@mkdir db/clients 2>/dev/null || true
+	-@mkdir db/suppliers 2>/dev/null || true
 
 .PHONY: run
 run: $(projet)

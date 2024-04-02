@@ -3,10 +3,13 @@
 #include "client.h"
 #include "supplier.h"
 #include "product.h"
+#include "terminal.h"
 
 #include <stdio.h>
 
 void base_register(enum modes mode) {
+    new_page();
+
     switch (mode) {
     case MODE_CLIENT:
         client_register();
@@ -27,6 +30,8 @@ void base_register(enum modes mode) {
 }
 
 void base_inspect(enum modes mode) {
+    new_page();
+
     switch (mode) {
     case MODE_CLIENT:
         client_inspect();
@@ -47,6 +52,8 @@ void base_inspect(enum modes mode) {
 }
 
 void base_modify(enum modes mode) {
+    new_page();
+
     switch (mode) {
     case MODE_CLIENT:
         client_modify();
@@ -67,6 +74,8 @@ void base_modify(enum modes mode) {
 }
 
 void base_delete(enum modes mode) {
+    new_page();
+
     switch (mode) {
     case MODE_CLIENT:
         client_delete();
