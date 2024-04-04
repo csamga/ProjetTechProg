@@ -1,64 +1,41 @@
 #include "address.h"
 #include "input.h"
+#include "terminal.h"
 
 #include <stdio.h>
-#include <string.h>
 
 void address_read(struct address *address) {
-    char *tmp;
-    size_t len;
-    bool valid;
-
-    puts("Saisir adresse :");
+    new_page();
+    puts("Informations adresse");
 
     /* Saisie du numéro */
-    fputs("Numéro : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_street_number(tmp, len);
-    } while (!valid);
-
-    strncpy(address->street_num, tmp, sizeof address->street_num);
+    input_read_positive_int(
+        "Numéro : ",
+        "Le numéro de rue doit être positif",
+        (int *)&address->num
+    );
 
     /* Saisie du nom */
-    fputs("Nom : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (!valid);
-
-    strncpy(address->street_name, tmp, sizeof address->street_name);
+    input_read_alpha("Nom : ", address->name, sizeof address->name);
 
     /* Saisie du code postal */
-    fputs("Code postal : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_zip_code(tmp, len);
-    } while (!valid);
-
-    strncpy(address->zip_code, tmp, sizeof address->zip_code);
+    input_read_num(
+        "Code postal : ",
+        "Le code postal doit contenir exactement 5 chiffres",
+        address->zip_code,
+        sizeof address->zip_code,
+        5
+    );
 
     /* Saisie de la ville */
-    fputs("Ville : ", stdout);
-
-    do {
-        input_read_stdin(&tmp, &len);
-        valid = input_validate_name(tmp, len);
-    } while (false);
-
-    strncpy(address->city, tmp, sizeof address->city);
-
-    free(tmp);
+    input_read_alpha("Ville : ", address->city, sizeof address->city);
 }
 
 void address_inspect(const struct address *address) {
     printf(
-        "Adresse : %s Rue %s %s %s\n",
-        address->street_num,
-        address->street_name,
+        "Adresse : %hu Rue %s %s %s\n",
+        address->num,
+        address->name,
         address->zip_code,
         address->city
     );

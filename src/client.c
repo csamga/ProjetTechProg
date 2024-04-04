@@ -29,9 +29,9 @@ void client_register(void) {
         return;
     }
 
-    client_read(&client);
     client.id = market_get_n_clients();
     client_create_db(&client);
+    client_read(&client);
 
     fwrite(&client, sizeof client, 1, client_db);
     fclose(client_db);
@@ -58,7 +58,7 @@ void client_modify(void) {
     }
 
     /* Saisie du nom */
-    input_read_last_name(name, sizeof name);
+    input_read_alpha("Nom : ", name, sizeof name);
     client_search_by_name(name, &client, &valid);
 
     if (!valid) {
@@ -77,15 +77,21 @@ void client_modify(void) {
         switch (choice) {
         case 0:
             printf("Ancien nom : %s\n", client.last_name);
-            input_read_last_name(client.last_name, sizeof client.last_name);
+            input_read_alpha("Nouveau nom : ", client.last_name, sizeof client.last_name);
             break;
         case 1:
             printf("Ancien prénom : %s\n", client.first_name);
-            input_read_first_name(client.first_name, sizeof client.first_name);
+            input_read_alpha("Nouveau prénom : ", client.first_name, sizeof client.first_name);
             break;
         case 2:
             printf("Ancien tel : %s\n", client.phone);
-            input_read_phone(client.phone, sizeof client.phone);
+            input_read_num(
+                "Nouveau tel : ",
+                "Le tel doit contenir exactement 10 chiffres",
+                client.phone,
+                sizeof client.phone,
+                10
+            );
             break;
         case 3:
             printf("Ancien email : %s\n", client.email);
@@ -110,7 +116,7 @@ void client_inspect(void) {
     bool valid;
 
     /* Saisie du nom */
-    input_read_last_name(name, sizeof name);
+    input_read_alpha("Nom : ", name, sizeof name);
     client_search_by_name(name, &client, &valid);
 
     if (valid) {
@@ -135,8 +141,8 @@ void client_delete(void) {
     bool valid;
 
     /* Saisie du nom */
-    input_read_first_name(name, sizeof name);
-    client_search_by_name(name, NULL, &valid);
+    input_read_alpha("Nom : ", name, sizeof name);
+    client_search_by_name(name, &client, &valid);
 
     if (!valid) {
         return;
@@ -176,9 +182,46 @@ void client_delete(void) {
     fclose(new_client_db);
 
     remove("db/old_client_db.dat");
+    remove(client.purchase_db_file_name);
 
     new_page();
     puts("Client supprimé avec succès");
+    getchar();
+}
+
+void client_print_history(void) {
+    FILE *client_db;
+    struct client client;
+    char name[32], line[80];
+    bool exists;
+
+    /* Saisie du nom */
+    new_page();
+    input_read_alpha("Nom : ", name, sizeof name);
+    client_search_by_name(name, &client, &exists);
+
+    if (!exists) {
+        return;
+    }
+
+    client_db = fopen(client.purchase_db_file_name, "rb");
+
+    if (client_db == NULL) {
+        fprintf(stderr, "erreur: impossible d'ouvrir %s", client.purchase_db_file_name);
+        getchar();
+        return;
+    }
+
+    new_page();
+
+    while (!feof(client_db)) {
+        if (fgets(line, sizeof line, client_db)) {
+            fputs(line, stdout);
+        }
+    }
+
+    fclose(client_db);
+
     getchar();
 }
 
@@ -256,13 +299,19 @@ static void client_read(struct client *client) {
     puts("Saisie informations client");
 
     /* Saisie du nom */
-    input_read_last_name(client->last_name, sizeof client->last_name);
+    input_read_alpha("Nom : ", client->last_name, sizeof client->last_name);
 
     /* Saisie du prénom */
-    input_read_first_name(client->first_name, sizeof client->first_name);
+    input_read_alpha("Prénom : ", client->first_name, sizeof client->first_name);
 
     /* Saisie du numéro de téléphone */
-    input_read_phone(client->phone, sizeof client->phone);
+    input_read_num(
+        "Tel : ",
+        "Le tel doit contenir exactement 10 chiffres",
+        client->phone,
+        sizeof client->phone,
+        10
+    );
 
     /* Saisie de l'adresse email */
     input_read_email(client->email, sizeof client->email);

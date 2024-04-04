@@ -55,7 +55,7 @@ void supplier_modify(void) {
     }
 
     /* Saisie du nom */
-    input_read_last_name(name, sizeof name);
+    input_read_alpha("Nom : ", name, sizeof name);
     supplier_search_by_name(name, &supplier, &valid);
 
     if (!valid) {
@@ -74,15 +74,21 @@ void supplier_modify(void) {
         switch (choice) {
         case 0:
             printf("Ancien nom : %s\n", supplier.last_name);
-            input_read_last_name(supplier.last_name, sizeof supplier.last_name);
+            input_read_alpha("Nouveau nom : ", supplier.last_name, sizeof supplier.last_name);
             break;
         case 1:
             printf("Ancien prénom : %s\n", supplier.first_name);
-            input_read_first_name(supplier.first_name, sizeof supplier.first_name);
+            input_read_alpha("Nouveau nom : ", supplier.first_name, sizeof supplier.first_name);
             break;
         case 2:
             printf("Ancien tel : %s\n", supplier.phone);
-            input_read_phone(supplier.phone, sizeof supplier.phone);
+            input_read_num(
+                "Nouveau tel : ",
+                "Le tel doit contenir exactement 10 chiffres",
+                supplier.phone,
+                sizeof supplier.phone,
+                10
+            );
             break;
         case 3:
             printf("Ancien email : %s\n", supplier.email);
@@ -107,7 +113,7 @@ void supplier_inspect(void) {
     bool valid;
 
     /* Saisie nom */
-    input_read_last_name(name, sizeof name);
+    input_read_alpha("Nom : ", name, sizeof name);
     supplier_search_by_name(name, &supplier, &valid);
 
     if (valid) {
@@ -132,7 +138,7 @@ void supplier_delete(void) {
     char name[32];
 
     /* Saisie du nom */
-    input_read_last_name(name, sizeof name);
+    input_read_alpha("Nom : ", name, sizeof name);
     supplier_search_by_name(name, NULL, &valid);
 
     if (!valid) {
@@ -252,13 +258,19 @@ static void supplier_read(struct supplier *supplier) {
     puts("Saisie informations fournisseur");
 
     /* Saisie du nom */
-    input_read_last_name(supplier->last_name, sizeof supplier->last_name);
+    input_read_alpha("Nom : ", supplier->last_name, sizeof supplier->last_name);
 
     /* Saisie du prénom */
-    input_read_first_name(supplier->first_name, sizeof supplier->first_name);
+    input_read_alpha("Prénom : ", supplier->first_name, sizeof supplier->first_name);
 
     /* Saisie du numéro de téléphone */
-    input_read_phone(supplier->phone, sizeof supplier->phone);
+    input_read_num(
+        "Tel : ",
+        "Le tel doit contenir exactement 10 chiffres",
+        supplier->phone,
+        sizeof supplier->phone,
+        10
+    );
 
     /* Saisie de l'adresse email */
     input_read_email(supplier->email, sizeof supplier->email);

@@ -2,10 +2,14 @@
 #include "terminal.h"
 #include "input.h"
 #include "utils.h"
+#include "product.h"
 #include "sale.h"
+#include "client.h"
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <wchar.h>
+#include <locale.h>
 
 #define COUNTOF(x) (sizeof (x) / sizeof *(x))
 
@@ -246,16 +250,39 @@ int main(void) {
             case ACTION_QUIT:
                 quit = true;
                 break;
-            case ACTION_VENTE_ENREGISTRER_TRANSAC:
-                sale_register();
-                break;
-            case ACTION_VENTE_CONSULTER_HISTO_VENTES:
-                puts("implémenter histo ventes");
-                getchar();
-                break;
             default:
-                puts("implémenter");
+                /* puts("implémenter");
                 getchar();
+                break; */
+            }
+
+            switch (mode) {
+            case MODE_CLIENT:
+                switch (action) {
+                case ACTION_CLIENT_CONSULTER_HISTO_ACHAT:
+                    client_print_history();
+                    break;
+                }
+                break;
+            case MODE_SUPPLIER:
+                break;
+            case MODE_SALE:
+                switch (action) {
+                case ACTION_VENTE_ENREGISTRER_TRANSAC:
+                    sale_register();
+                    break;
+                case ACTION_VENTE_CONSULTER_HISTO_VENTES:
+                    puts("implémenter histo ventes");
+                    getchar();
+                    break;
+                }
+                break;
+            case MODE_PRODUCT:
+                switch (action) {
+                case ACTION_PRODUIT_CONSULTER_INVENTAIRE:
+                    product_inspect_inventory();
+                    break;
+                }
                 break;
             }
         }

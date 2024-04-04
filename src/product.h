@@ -17,6 +17,7 @@ void product_register(void);
 void product_modify(void);
 void product_inspect(void);
 void product_delete(void);
+void product_inspect_inventory(void);
 
 void product_search_by_name(
     const char *name,

@@ -24,7 +24,7 @@
         - [ ] Historique comandes fournisseur
         - [ ] Commandes en attente
         - [ ] Historique ventes par produit
-        - [ ] Inventaire
+        - [x] Inventaire
 - [x] Implémenter confirmation suppression
 - [ ] Implémenter recherche top level
 - [ ] Implémenter choix recherche

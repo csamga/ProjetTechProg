@@ -4,20 +4,11 @@
 int acquire_input(void);
 bool validate_input(int choice, int first, int last);
 
-void input_read_stdin(char **input, size_t *len);
-
-void input_read_last_name(char *name, size_t max_len);
-void input_read_first_name(char *name, size_t max_len);
-void input_read_phone(char *phone, size_t max_len);
+void input_read_alpha(char *prompt, char *dest, size_t max_len);
+void input_read_num(char *prompt, char *reject_prompt, char *dest, size_t max_len, size_t exact_len);
 void input_read_email(char *email, size_t max_len);
-void input_read_price(float *price);
-
-bool input_validate_name(char *input, size_t len);
-bool input_validate_phone(char *input, size_t len);
-bool input_validate_email(char *input, size_t len);
-bool input_validate_street_number(char *input, size_t len);
-bool input_validate_zip_code(char *input, size_t len);
-bool input_validate_price(float price);
+void input_read_positive_float(char *prompt, char *reject_prompt, float *dest);
+void input_read_positive_int(char *prompt, char *reject_prompt, int *dest);
 
 bool input_confirm_delete(const char *message);
 

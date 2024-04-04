@@ -19,6 +19,7 @@ void client_register(void);
 void client_modify(void);
 void client_inspect(void);
 void client_delete(void);
+void client_print_history(void);
 
 void client_search_by_name(
     const char *name,
