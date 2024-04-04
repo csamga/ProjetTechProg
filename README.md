@@ -20,7 +20,7 @@
     - [x] Produit
     - [x] Fournisseur
     - [ ] Implémenter base de données par structure
-        - [ ] Historique achat client
+        - [x] Historique achat client
         - [ ] Historique comandes fournisseur
         - [ ] Commandes en attente
         - [ ] Historique ventes par produit

@@ -16,6 +16,7 @@ static char *field_str[] = {
 };
 
 static void client_read(struct client *client);
+static void client_create_db(struct client *client);
 
 void client_register(void) {
     FILE *client_db;
@@ -30,10 +31,12 @@ void client_register(void) {
 
     client_read(&client);
     client.id = market_get_n_clients();
-    market_client_added();
+    client_create_db(&client);
 
     fwrite(&client, sizeof client, 1, client_db);
     fclose(client_db);
+
+    market_client_added();
 
     new_page();
     puts("Client créé avec succès");
@@ -266,4 +269,24 @@ static void client_read(struct client *client) {
 
     /* Saisie de l'adresse */
     address_read(&client->address);
+}
+
+static void client_create_db(struct client *client) {
+    FILE *db;
+    char tmp[64], num_str[8];
+
+    strncpy(tmp, PER_CLIENT_DB_PREFIX, sizeof tmp);
+    sprintf(num_str, "%d", client->id);
+    strncat(tmp, num_str, sizeof tmp - strlen(num_str));
+    strncat(tmp, PER_CLIENT_DB_SUFFIX, sizeof tmp - strlen(PER_CLIENT_DB_SUFFIX));
+    strncpy(client->purchase_db_file_name, tmp, sizeof client->purchase_db_file_name);
+
+    db = fopen(client->purchase_db_file_name, "wx");
+
+    if (db == NULL) {
+        fprintf(stderr, "erreur: impossible de créer le fichier %s", tmp);
+        return;
+    }
+
+    fclose(db);
 }
