@@ -9,7 +9,9 @@ src = $(wildcard $(src_dir)/*.c)
 obj = $(patsubst $(src_dir)/%.c,$(tmp_dir)/%.o,$(src))
 projet = $(bin_dir)/projet
 
-projet: $(projet) fichiers
+all: projet fichiers
+
+projet: $(projet)
 
 $(projet): $(obj)
 	mkdir -p $(@D)
