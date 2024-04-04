@@ -17,11 +17,14 @@
     - [ ] Transaction
 - [ ] Implémenter bases de données
     - [x] Client
-    - [x] Produits
-    - [x] Fournisseurs
-    - [ ] Historique achat par client
-        - [ ] Implémenter création fichier par client
-    - [ ] Historique ventes par produit
+    - [x] Produit
+    - [x] Fournisseur
+    - [ ] Implémenter base de données par structure
+        - [ ] Historique achat client
+        - [ ] Historique comandes fournisseur
+        - [ ] Commandes en attente
+        - [ ] Historique ventes par produit
+        - [ ] Inventaire
 - [x] Implémenter confirmation suppression
 - [ ] Implémenter recherche top level
 - [ ] Implémenter choix recherche
@@ -30,6 +33,9 @@
 - [ ] Remonter curseur quand input invalide
 - [ ] Modifier champs adresse
 - [ ] Simplifier fonctions market
+- [ ] Ajouter retour ligne après indication mode
+
+## Description des modes
 
 Le programme est divisé en 4 modes :
 - Client
@@ -39,8 +45,6 @@ Le programme est divisé en 4 modes :
 
 Chaque mode propose différentes actions contextuelles qui sont, au même titre
 que les modes, sélectionnées avec le pavé numérique.
-
-## Description des modes
 
 Les modes **Client**, **Fournisseur** et **Produit** proposent 4 actions de base
 opérant sur l'objet du mode en question :
@@ -65,3 +69,32 @@ spécifiques.
 ### Vente
 - Enregistrer une transaction
 - Consulter l'historique des ventes
+
+## Compilation
+
+Il est préférable d'utiliser l'outil ```make``` pour construire le programme.
+
+Le fichier ```Makefile``` est conçu pour détecter automatiquement les fichiers
+```*.c``` situés dans le dossier ```src/```. Le résultat de la compilation est
+placé dans le dossier ```tmp/```. Enfin, les objets sont liés et l'exécutable
+est placé dans le dossier ```bin/```.
+
+En parallèle, l'arborescence de dossiers de bases de données située dans le
+dossier ```db/``` est créée. Seuls les dossiers sont créés. Le programme est
+responsable de l'oberture/fermeture des fichiers.
+
+### Pour compiler le programme
+
+```
+$ make
+```
+
+### Pour lancer le programme
+
+Deux options :
+
+```
+(1) $ make run
+
+(2) $ ./bin/projet
+```
