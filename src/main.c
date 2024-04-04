@@ -2,6 +2,7 @@
 #include "terminal.h"
 #include "input.h"
 #include "utils.h"
+#include "sale.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -76,11 +77,12 @@ void mode_process_input(enum modes mode, enum actions *action) {
             break;
         case MODE_SALE:
             valid = validate_input(
-                choice,
+                choice + 4,
                 ACTION_RETURN,
                 ACTION_VENTE_CONSULTER_HISTO_VENTES
             );
-            break;
+            *action = (enum actions)choice + 4;
+            return;
         default:
             valid = true;
             break;
@@ -180,15 +182,13 @@ int main(void) {
 
     bool quit;
 
-    /* database_open(); */
     use_screen_buffer(screen_buffer_alternative);
     show_cursor(false);
 
     quit = false;
 
     while (!quit) {
-        clear_screen();
-        set_cursor_home();
+        new_page();
 
         puts("Choisir mode d'action:");
         list_print(mode_str, COUNTOF(mode_str), 1);
@@ -199,16 +199,14 @@ int main(void) {
         action = ACTION_NONE;
 
         while ((action != ACTION_RETURN) && !quit) {
-            clear_screen();
-            set_cursor_home();
+            new_page();
 
             printf("Mode %s\n", mode_str[mode]);
 
             if (mode != MODE_SALE) {
                 list_print(action_base_str, COUNTOF(action_base_str), 1);
             } else {
-                puts(action_base_str[ACTION_RETURN]);
-                puts(action_base_str[ACTION_QUIT]);
+                list_print(&action_base_str[ACTION_RETURN], 2, 1);
             }
 
             switch (mode) {
@@ -222,7 +220,7 @@ int main(void) {
                 list_print(action_product_str, COUNTOF(action_product_str), 7);
                 break;
             case MODE_SALE:
-                list_print(action_sale_str, COUNTOF(action_sale_str), 1);
+                list_print(action_sale_str, COUNTOF(action_sale_str), 3);
                 break;
             default:
                 break;
@@ -248,98 +246,20 @@ int main(void) {
             case ACTION_QUIT:
                 quit = true;
                 break;
+            case ACTION_VENTE_ENREGISTRER_TRANSAC:
+                sale_register();
+                break;
+            case ACTION_VENTE_CONSULTER_HISTO_VENTES:
+                puts("implémenter histo ventes");
+                getchar();
+                break;
             default:
                 puts("implémenter");
                 getchar();
                 break;
             }
         }
-
-        /* switch (mode) {
-        case MODE_CLIENT:
-            switch (action) {
-            case ACTION_REGISTER:
-                client_register();
-                break;
-            case ACTION_MODIFY:
-                client_modify();
-                break;
-            case ACTION_INSPECT:
-                client_print();
-                break;
-            case ACTION_DELETE:
-                client_delete();
-                break;
-            case ACTION_CLIENT_CONSULTER_HISTO_ACHAT:
-                puts("pas encore implémenté");
-                break;
-            default:
-                break;
-            }
-            break;
-        case MODE_FOURNISSEUR:
-            switch (action) {
-            case ACTION_REGISTER:
-                fournisseur_register();
-                break;
-            case ACTION_MODIFY:
-                puts("pas encore implémenté");
-                break;
-            case ACTION_INSPECT:
-                puts("pas encore implémenté");
-                break;
-            case ACTION_DELETE:
-                puts("pas encore implémenté");
-                break;
-            case ACTION_FOURNISSEUR_PASSER_COMMANDE:
-                puts("pas encore implémenté");
-                break;
-            case ACTION_FOURNISSEUR_ENREGISTRER_LIVRAISON:
-                puts("pas encore implémenté");
-                break;
-            default:
-                break;
-            }
-            break;
-        case MODE_PRODUIT:
-            switch (action) {
-            case ACTION_REGISTER:
-                product_register();
-                break;
-            case ACTION_MODIFY:
-                product_modify();
-                break;
-            case ACTION_INSPECT:
-                product_print();
-                break;
-            case ACTION_DELETE:
-                product_delete();
-                break;
-            case ACTION_PRODUIT_CONSULTER_INVENTAIRE:
-                puts("pas encore implémenté");
-                break;
-            default:
-                break;
-            }
-            break;
-        case MODE_VENTE:
-            switch (action) {
-            case ACTION_VENTE_ENREGISTRER_TRANSAC:
-                puts("pas encore implémenté");
-                break;
-            case ACTION_VENTE_CONSULTER_HISTO_VENTES:
-                puts("pas encore implémenté");
-                break;
-            default:
-                break;
-            }
-            break;
-        default:
-            break;
-        } */
     }
-
-    /* database_close(); */
 
     show_cursor(true);
     use_screen_buffer(screen_buffer_default);
