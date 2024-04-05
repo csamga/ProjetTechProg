@@ -15,6 +15,7 @@ static char *field_str[] = {
     "Marque",
     "Origine",
     "Prix",
+    "Masse/volume",
     "Retour"
 };
 
@@ -70,7 +71,7 @@ void product_modify(void) {
     do {
         new_page();
         puts("Champ à modifier");
-        list_print(field_str, 5, 1);
+        list_print(field_str, COUNTOF(field_str), 1);
 
         choice = acquire_input();
         finished = false;
@@ -90,7 +91,7 @@ void product_modify(void) {
             input_read_alpha("Nouvelle origine : ", product.origin, sizeof product.origin);
             break;
         case 3:
-            printf("Ancien prix : %f\n", product.price_euro);
+            printf("Ancien prix : %.2f\n", product.price_euro);
             input_read_positive_float(
                 "Nouveau prix : ",
                 "Le prix doit être positif",
@@ -98,6 +99,14 @@ void product_modify(void) {
             );
             break;
         case 4:
+            printf("Ancienne masse/volume (kg/L) : %.3f\n", product.mass_kg_vol_l);
+            input_read_positive_float(
+                "Nouvelle masse/volume (kg/L) : ",
+                "La masse/volume doit être positive",
+                &product.mass_kg_vol_l
+            );
+            break;
+        case 5:
             finished = true;
         }
     } while (!finished);

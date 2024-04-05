@@ -40,16 +40,15 @@ void sale_register(void) {
         input_flush_stdin();
     } while (choice == 'o' || choice == 'O' || choice == '\x0d');
 
-    fprintf(client_purchase_db, "%.2f\n\n", price_tot);
-
     fclose(client_purchase_db);
 }
 
-static void sale_add_product(FILE *client_db, float *price_tot) {
+static void sale_add_product(FILE *client_db, float *price_compound) {
     char name[32];
     struct product product;
     bool exists;
     short quantity;
+    float price_detail;
 
     input_read_alpha("Nom produit : ", name, sizeof name);
     product_search_by_name(name, &product, &exists);
@@ -59,7 +58,16 @@ static void sale_add_product(FILE *client_db, float *price_tot) {
         fputs("Quantité : ", stdout);
         scanf("%hd", &quantity);
         input_flush_stdin();
-        *price_tot += product.price_euro * quantity;
-        fprintf(client_db, " %d\n", quantity);
+
+        price_detail = product.price_euro * (float)quantity;
+        *price_compound += price_detail;
+
+        fprintf(
+            client_db,
+            "\n%d\n%.2f\n%.2f\n\n",
+            quantity,
+            price_detail,
+            *price_compound
+        );
     }
 }
