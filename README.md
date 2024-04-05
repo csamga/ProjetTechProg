@@ -34,6 +34,7 @@
 - [ ] Modifier champs adresse
 - [ ] Simplifier fonctions market
 - [ ] Ajouter retour ligne après indication mode
+- [ ] Ristourne
 
 ## Description des modes
 

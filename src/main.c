@@ -11,8 +11,6 @@
 #include <wchar.h>
 #include <locale.h>
 
-#define COUNTOF(x) (sizeof (x) / sizeof *(x))
-
 enum actions {
     ACTION_NONE = 0,
     ACTION_REGISTER = 0,
@@ -251,6 +249,7 @@ int main(void) {
                 quit = true;
                 break;
             default:
+                break;
                 /* puts("implémenter");
                 getchar();
                 break; */
@@ -261,6 +260,8 @@ int main(void) {
                 switch (action) {
                 case ACTION_CLIENT_CONSULTER_HISTO_ACHAT:
                     client_print_history();
+                    break;
+                default:
                     break;
                 }
                 break;
@@ -275,12 +276,16 @@ int main(void) {
                     puts("implémenter histo ventes");
                     getchar();
                     break;
+                default:
+                    break;
                 }
                 break;
             case MODE_PRODUCT:
                 switch (action) {
                 case ACTION_PRODUIT_CONSULTER_INVENTAIRE:
                     product_inspect_inventory();
+                    break;
+                default:
                     break;
                 }
                 break;

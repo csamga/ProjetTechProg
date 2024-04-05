@@ -95,7 +95,7 @@ void client_modify(void) {
             break;
         case 3:
             printf("Ancien email : %s\n", client.email);
-            input_read_email(client.email, sizeof client.email);
+                input_read_email("Nouvel email : ", "Adresse email invalide", client.email, sizeof client.email);
             break;
         case 4:
             finished = true;
@@ -314,7 +314,7 @@ static void client_read(struct client *client) {
     );
 
     /* Saisie de l'adresse email */
-    input_read_email(client->email, sizeof client->email);
+    input_read_email("Email : ", "Adresse email invalide", client->email, sizeof client->email);
 
     /* Saisie de l'adresse */
     address_read(&client->address);

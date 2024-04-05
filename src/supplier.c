@@ -92,7 +92,7 @@ void supplier_modify(void) {
             break;
         case 3:
             printf("Ancien email : %s\n", supplier.email);
-            input_read_email(supplier.email, sizeof supplier.email);
+            input_read_email("Nouvel email : ", "Adresse email invalide", supplier.email, sizeof supplier.email);
             break;
         case 4:
             finished = true;
@@ -273,7 +273,7 @@ static void supplier_read(struct supplier *supplier) {
     );
 
     /* Saisie de l'adresse email */
-    input_read_email(supplier->email, sizeof supplier->email);
+    input_read_email("Nouvel email : ", "Adresse email invalide", supplier->email, sizeof supplier->email);
 
     /* Saisie de l'adresse */
     address_read(&supplier->address);

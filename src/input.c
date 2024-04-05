@@ -10,7 +10,7 @@
 static void input_read_stdin(char **input, size_t *len);
 static bool input_validate_alpha(char *input, size_t len);
 static bool input_validate_num(char *reject_prompt, char *input, size_t len, size_t exact_len);
-static bool input_validate_email(char *input, size_t len);
+static bool input_validate_email(char *reject_prompr, char *input, size_t len);
 
 int acquire_input(void) {
     int choice;
@@ -61,16 +61,16 @@ void input_read_num(char *prompt, char *reject_prompt, char *dest, size_t max_le
     free(tmp);
 }
 
-void input_read_email(char *email, size_t max_len) {
+void input_read_email(char *prompt, char *reject_prompt, char *email, size_t max_len) {
     bool valid;
     char *tmp;
     size_t len;
 
-    fputs("Email : ", stdout);
+    fputs(prompt, stdout);
 
     do {
         input_read_stdin(&tmp, &len);
-        valid = input_validate_email(tmp, len);
+        valid = input_validate_email(reject_prompt, tmp, len);
     } while (!valid);
 
     strncpy(email, tmp, max_len);
@@ -196,7 +196,7 @@ static bool input_validate_alpha(char *input, size_t len) {
     return valid;
 }
 
-static bool input_validate_num(char *prompt, char *input, size_t len, size_t exact_len) {
+static bool input_validate_num(char *reject_prompt, char *input, size_t len, size_t exact_len) {
     bool valid;
     size_t i;
 
@@ -207,19 +207,23 @@ static bool input_validate_num(char *prompt, char *input, size_t len, size_t exa
     }
 
     if (!valid) {
-        puts(prompt);
+        puts(reject_prompt);
     }
 
     return valid;
 }
 
-static bool input_validate_email(char *input, size_t len) {
+static bool input_validate_email(char *reject_prompt, char *input, size_t len) {
     bool valid;
 
     (void)input;
     (void)len;
 
     valid = true;
+
+    if (!valid) {
+        puts(reject_prompt);
+    }
 
     return valid;
 }
