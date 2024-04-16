@@ -5,8 +5,9 @@
 #include <stdio.h>
 
 void address_read(struct address *address) {
-    new_page();
-    puts("Informations adresse");
+    set_text_attr(normal, true);
+    puts("\nInformations adresse");
+    reset_text_attr();
 
     /* Saisie du numéro */
     input_read_positive_int(
@@ -16,7 +17,7 @@ void address_read(struct address *address) {
     );
 
     /* Saisie du nom */
-    input_read_alpha("Nom : ", address->name, sizeof address->name);
+    input_read_street("Nom : ", address->name, sizeof address->name);
 
     /* Saisie du code postal */
     input_read_num(

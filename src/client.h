@@ -4,6 +4,7 @@
 #include "address.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 
 struct client {
     unsigned short id;
@@ -21,16 +22,7 @@ void client_inspect(void);
 void client_delete(void);
 void client_print_history(void);
 
-void client_search_by_name(
-    const char *name,
-    struct client *client,
-    bool *exists
-);
-
-void client_search_by_id(
-    const unsigned short id,
-    struct client *client,
-    bool *exists
-);
+void client_search_by_name(FILE *client_db, const char *name, struct client *client, long *pos);
+void client_search_by_id(const unsigned short id, struct client *client, bool *exists);
 
 #endif

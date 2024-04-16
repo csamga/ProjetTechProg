@@ -33,3 +33,5 @@ run: $(projet)
 .PHONY: clean
 clean:
 	-$(RM) $(projet) $(filter-out %.c,$(obj))
+
+remake: clean projet

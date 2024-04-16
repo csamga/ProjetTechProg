@@ -17,6 +17,7 @@ static char *field_str[] = {
 
 static void client_read(struct client *client);
 static void client_create_db(struct client *client);
+static void client_print(struct client *client);
 
 void client_register(void) {
     FILE *client_db;
@@ -25,66 +26,76 @@ void client_register(void) {
     client_db = fopen(CLIENT_DB, "ab");
 
     if (client_db == NULL) {
-        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
+        log_error("erreur: impossible d'ouvrir " CLIENT_DB);
         return;
     }
 
     client.id = market_get_n_clients();
-    client_create_db(&client);
     client_read(&client);
+    client_create_db(&client);
 
     fwrite(&client, sizeof client, 1, client_db);
     fclose(client_db);
 
     market_client_added();
 
-    new_page();
-    puts("Client créé avec succès");
-    getchar();
+    log_success("Client créé avec succès");
 }
 
 void client_modify(void) {
     FILE *client_db;
     struct client client;
     char name[32];
-    bool valid, finished;
+    bool finished;
     int choice;
+    long pos, end;
+
+    log_title("Modification client\n");
     
     client_db = fopen(CLIENT_DB, "rb+");
+    end = 0l;
 
-    if (client_db == NULL) {
-        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
+    if (client_db) {
+        fseek(client_db, 0l, SEEK_END);
+        end = ftell(client_db);
+    }
+
+    if (end == 0l) {
+        if (client_db != NULL) {
+            fclose(client_db);
+        }
+
+        log_info("La base de données client est vide");
         return;
     }
 
-    /* Saisie du nom */
     input_read_alpha("Nom : ", name, sizeof name);
-    client_search_by_name(name, &client, &valid);
+    client_search_by_name(client_db, name, &client, &pos);
 
-    if (!valid) {
+    if (pos == -1l) {
         return;
     }
 
     do {
         new_page();
-        puts("Champ à modifier");
+
+        log_title("Champ à modifier\n");
         list_print(field_str, 5, 1);
 
-        choice = acquire_input();
+        choice = menu_acquire_input();
         finished = false;
-        new_page();
 
         switch (choice) {
         case 0:
-            printf("Ancien nom : %s\n", client.last_name);
+            printf("\nAncien nom : %s\n", client.last_name);
             input_read_alpha("Nouveau nom : ", client.last_name, sizeof client.last_name);
             break;
         case 1:
-            printf("Ancien prénom : %s\n", client.first_name);
+            printf("\nAncien prénom : %s\n", client.first_name);
             input_read_alpha("Nouveau prénom : ", client.first_name, sizeof client.first_name);
             break;
         case 2:
-            printf("Ancien tel : %s\n", client.phone);
+            printf("\nAncien tel : %s\n", client.phone);
             input_read_num(
                 "Nouveau tel : ",
                 "Le tel doit contenir exactement 10 chiffres",
@@ -94,7 +105,7 @@ void client_modify(void) {
             );
             break;
         case 3:
-            printf("Ancien email : %s\n", client.email);
+            printf("\nAncien email : %s\n", client.email);
                 input_read_email("Nouvel email : ", "Adresse email invalide", client.email, sizeof client.email);
             break;
         case 4:
@@ -102,34 +113,44 @@ void client_modify(void) {
         }
     } while (!finished);
 
+    fseek(client_db, pos, SEEK_SET);
     fwrite(&client, sizeof client, 1, client_db);
     fclose(client_db);
 
-    new_page();
-    puts("Client modifié avec succès");
-    getchar();
+    log_success("Client modifié avec succès");
 }
 
 void client_inspect(void) {
+    FILE *client_db;
     struct client client;
     char name[32];
-    bool valid;
+    long pos, end;
 
-    /* Saisie du nom */
+    log_title("Informations client\n");
+    
+    client_db = fopen(CLIENT_DB, "rb+");
+    end = 0l;
+
+    if (client_db) {
+        fseek(client_db, 0l, SEEK_END);
+        end = ftell(client_db);
+    }
+
+    if (end == 0l) {
+        if (client_db != NULL) {
+            fclose(client_db);
+        }
+
+        log_info("La base de données client est vide");
+        return;
+    }
+
     input_read_alpha("Nom : ", name, sizeof name);
-    client_search_by_name(name, &client, &valid);
+    client_search_by_name(client_db, name, &client, &pos);
 
-    if (valid) {
-        new_page();
-
-        puts("Informations client");
-        printf("Identifiant : %hu\n", client.id);
-        printf("Nom : %s\n", client.last_name);
-        printf("Prénom : %s\n", client.first_name);
-        printf("Tel : %s\n", client.phone);
-        printf("Email : %s\n", client.email);
-        address_inspect(&client.address);
-
+    if (pos != -1l) {
+        move_cursor_up(1);
+        client_print(&client);
         getchar();
     }
 }
@@ -139,12 +160,31 @@ void client_delete(void) {
     struct client client;
     char name[32];
     bool valid;
+    long pos, end;
 
-    /* Saisie du nom */
+    log_title("Suppression client\n");
+
+    old_client_db = fopen(CLIENT_DB, "rb+");
+    end = 0l;
+
+    if (old_client_db) {
+        fseek(old_client_db, 0l, SEEK_END);
+        end = ftell(old_client_db);
+    }
+
+    if (end == 0l) {
+        if (old_client_db != NULL) {
+            fclose(old_client_db);
+        }
+
+        log_info("La base de données client est vide");
+        return;
+    }
+
     input_read_alpha("Nom : ", name, sizeof name);
-    client_search_by_name(name, &client, &valid);
+    client_search_by_name(old_client_db, name, &client, &pos);
 
-    if (!valid) {
+    if (pos == -1l) {
         return;
     }
 
@@ -159,22 +199,22 @@ void client_delete(void) {
     old_client_db = fopen("db/old_client_db.dat", "rb");
 
     if (old_client_db == NULL) {
-        fputs("erreur: impossible d'ouvrir db/old_client_db.dat\n", stderr);
+        log_error("erreur: le fichier db/old_client_db.dat n'existe pas");
         return;
     }
 
     new_client_db = fopen(CLIENT_DB, "a");
 
     if (new_client_db == NULL) {
-        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
+        log_error("erreur: impossible d'ouvrir " CLIENT_DB);
         return;
     }
 
     while (!feof(old_client_db)) {
-        fread(&client, sizeof client, 1, old_client_db);
-
-        if (strcmp(name, client.last_name) != 0) {
-            fwrite(&client, sizeof client, 1, new_client_db);
+        if (fread(&client, sizeof client, 1, old_client_db)) {
+            if (strcmp(name, client.last_name) != 0) {
+                fwrite(&client, sizeof client, 1, new_client_db);
+            }
         }
     }
 
@@ -184,80 +224,108 @@ void client_delete(void) {
     remove("db/old_client_db.dat");
     remove(client.purchase_db_file_name);
 
-    new_page();
-    puts("Client supprimé avec succès");
-    getchar();
+    log_success("Client supprimé avec succès");
 }
 
 void client_print_history(void) {
-    FILE *client_db;
+    FILE *client_db, *per_client_db;
     struct client client;
     char name[32], line[80];
-    bool exists;
+    long pos, end;
 
-    /* Saisie du nom */
     new_page();
+
+    log_title("Historique achat\n");
+
+    client_db = fopen(CLIENT_DB, "rb+");
+    end = 0l;
+
+    if (client_db) {
+        fseek(client_db, 0l, SEEK_END);
+        end = ftell(client_db);
+    }
+
+    if (end == 0l) {
+        if (client_db != NULL) {
+            fclose(client_db);
+        }
+
+        log_info("La base de données client est vide");
+        return;
+    }
+
     input_read_alpha("Nom : ", name, sizeof name);
-    client_search_by_name(name, &client, &exists);
+    client_search_by_name(client_db, name, &client, &pos);
+    fclose(client_db);
 
-    if (!exists) {
+    if (pos == -1l) {
         return;
     }
 
-    client_db = fopen(client.purchase_db_file_name, "rb");
+    per_client_db = fopen(client.purchase_db_file_name, "rb");
 
-    if (client_db == NULL) {
-        fprintf(stderr, "erreur: impossible d'ouvrir %s", client.purchase_db_file_name);
-        getchar();
+    if (per_client_db == NULL) {
+        log_error("erreur: impossible d'ouvrir %s", client.purchase_db_file_name);
         return;
     }
 
-    new_page();
+    fseek(per_client_db, 0l, SEEK_END);
+    end = ftell(per_client_db);
 
-    while (!feof(client_db)) {
-        if (fgets(line, sizeof line, client_db)) {
+    if (end == 0l) {
+        log_info("L'historique d'achat du client %s %s est vide",
+            client.last_name,
+            client.first_name
+        );
+        return;
+    }
+
+    rewind(per_client_db);
+    puts("");
+
+    while (!feof(per_client_db)) {
+        if (fgets(line, sizeof line, per_client_db)) {
             fputs(line, stdout);
         }
     }
 
-    fclose(client_db);
+    fclose(per_client_db);
 
     getchar();
 }
 
 void client_search_by_name(
+    FILE *client_db,
     const char *name,
     struct client *client,
-    bool *exists)
+    long *pos)
 {
-    FILE *client_db;
     struct client tmp;
+    bool exists;
 
-    client_db = fopen(CLIENT_DB, "rb");
+    rewind(client_db);
 
-    if (client_db == NULL) {
-        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
-        return;
-    }
+    exists = false;
 
-    *exists = false;
-
-    while (!feof(client_db) && (!*exists)) {
+    while (!feof(client_db) && !exists) {
         fread(&tmp, sizeof tmp, 1, client_db);
-        *exists = (strcmp(tmp.last_name, name) == 0);
+        exists = (strcmp(tmp.last_name, name) == 0);
     }
 
-    if (exists && *exists) {
+    if (exists) {
         if (client) {
             *client = tmp;
         }
+        if (pos) {
+            *pos = ftell(client_db) - sizeof tmp;
+        }
     } else {
-        client = NULL;
-        printf("Le client \"%s\" n'existe pas", name);
-        getchar();
-    }
+        if (pos) {
+            *pos = -1l;
+        }
 
-    fclose(client_db);
+        log_info("\nLe client \"%s\" n'existe pas", name);
+    }
 }
 
 void client_search_by_id(
@@ -271,7 +339,7 @@ void client_search_by_id(
     client_db = fopen(CLIENT_DB, "rb");
 
     if (client_db == NULL) {
-        fputs("erreur: impossible d'ouvrir " CLIENT_DB "\n", stderr);
+        log_error("erreur: le fichier " CLIENT_DB " n'existe pas");
         return;
     }
 
@@ -287,16 +355,14 @@ void client_search_by_id(
             *client = tmp;
         }
     } else {
-        client = NULL;
-        printf("Le client n°%hu n'existe pas", id);
-        getchar();
+        log_info("Le client n°%hu n'existe pas", id);
     }
 
     fclose(client_db);
 }
 
 static void client_read(struct client *client) {
-    puts("Saisie informations client");
+    log_title("Saisie informations client\n");
 
     /* Saisie du nom */
     input_read_alpha("Nom : ", client->last_name, sizeof client->last_name);
@@ -333,9 +399,18 @@ static void client_create_db(struct client *client) {
     db = fopen(client->purchase_db_file_name, "wx");
 
     if (db == NULL) {
-        fprintf(stderr, "erreur: impossible de créer le fichier %s", tmp);
+        log_error("erreur: le fichier %s existe déjà", tmp);
         return;
     }
 
     fclose(db);
+}
+
+static void client_print(struct client *client) {
+    printf("Identifiant : %hu\n", client->id);
+    printf("Nom : %s\n", client->last_name);
+    printf("Prénom : %s\n", client->first_name);
+    printf("Tel : %s\n", client->phone);
+    printf("Email : %s\n", client->email);
+    address_inspect(&client->address);
 }

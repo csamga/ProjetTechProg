@@ -11,19 +11,18 @@ static void input_read_stdin(char **input, size_t *len);
 static bool input_validate_alpha(char *input, size_t len);
 static bool input_validate_num(char *reject_prompt, char *input, size_t len, size_t exact_len);
 static bool input_validate_email(char *reject_prompr, char *input, size_t len);
+static bool input_validate_street(char *input, size_t len);
 
-int acquire_input(void) {
+int menu_acquire_input(void) {
     int choice;
 
-    choice = getchar();
-    choice -= '1';
-
+    choice = getchar() - '1';
     input_flush_stdin();
 
     return choice;
 }
 
-bool validate_input(int choice, int first, int last) {
+bool menu_validate_input(int choice, int first, int last) {
     return (choice >= first) && (choice <= last);
 }
 
@@ -32,9 +31,8 @@ void input_read_alpha(char *prompt, char *dest, size_t max_len) {
     char *tmp;
     size_t len;
 
-    fputs(prompt, stdout);
-
     do {
+        fputs(prompt, stdout);
         input_read_stdin(&tmp, &len);
         valid = input_validate_alpha(tmp, len);
     } while (!valid);
@@ -49,9 +47,9 @@ void input_read_num(char *prompt, char *reject_prompt, char *dest, size_t max_le
     char *tmp;
     size_t len;
 
-    fputs(prompt, stdout);
 
     do {
+        fputs(prompt, stdout);
         input_read_stdin(&tmp, &len);
         valid = input_validate_num(reject_prompt, tmp, strlen(tmp), exact_len);
     } while (!valid);
@@ -66,9 +64,9 @@ void input_read_email(char *prompt, char *reject_prompt, char *email, size_t max
     char *tmp;
     size_t len;
 
-    fputs(prompt, stdout);
 
     do {
+        fputs(prompt, stdout);
         input_read_stdin(&tmp, &len);
         valid = input_validate_email(reject_prompt, tmp, len);
     } while (!valid);
@@ -82,14 +80,20 @@ void input_read_positive_float(char *prompt, char *reject_prompt, float *dest) {
     bool valid;
     float tmp;
 
-    fputs(prompt, stdout);
-    
     do {
+        fputs(prompt, stdout);
         scanf("%f", &tmp);
         getchar();
         valid = (tmp >= 0.0f);
         if (!valid) {
-            puts(reject_prompt);
+            set_text_attr(yellow, true);
+            fputs(reject_prompt, stdout);
+            reset_text_attr();
+            getchar();
+            move_cursor_up(1);
+            erase_line();
+            move_cursor_up(1);
+            erase_line();
         }
     } while (!valid);
 
@@ -100,28 +104,50 @@ void input_read_positive_int(char *prompt, char *reject_prompt, int *dest) {
     bool valid;
     int tmp;
 
-    fputs(prompt, stdout);
 
     do {
+        fputs(prompt, stdout);
         scanf("%d", &tmp);
         getchar();
         valid = (tmp >= 0);
         if (!valid) {
-            puts(reject_prompt);
+            set_text_attr(yellow, true);
+            fputs(reject_prompt, stdout);
+            reset_text_attr();
+            getchar();
+            move_cursor_up(1);
+            erase_line();
+            move_cursor_up(1);
+            erase_line();
         }
     } while (!valid);
 
     *dest = tmp;
 }
 
+void input_read_street(char *prompt, char *dest, size_t max_len) {
+    bool valid;
+    char *tmp;
+    size_t len;
+
+
+    do {
+        fputs(prompt, stdout);
+        input_read_stdin(&tmp, &len);
+        valid = input_validate_street(tmp, len);
+    } while (!valid);
+
+    strncpy(dest, tmp, max_len);
+
+    free(tmp);
+}
+
 bool input_confirm_delete(const char *prompt) {
     char c;
     bool valid, confirm;
 
-    new_page();
-
     do {
-        printf("%s (o/N) ", prompt);
+        log_warning("%s (o/N) ", prompt);
         scanf("%c", &c);
 
         switch (c) {
@@ -141,6 +167,11 @@ bool input_confirm_delete(const char *prompt) {
             break;
         default:
             valid = false;
+        }
+
+        if (!valid) {
+            move_cursor_up(1);
+            erase_line();
         }
 
         input_flush_stdin();
@@ -187,10 +218,18 @@ static bool input_validate_alpha(char *input, size_t len) {
     }
 
     if (!valid) {
-        puts(
+        set_text_attr(yellow, true);
+        fputs(
             "Le nom ne peut contenir que des lettres, espaces et tirets "
-            "et doit faire entre 1 et 30 caractères"
+            "et doit faire entre 1 et 30 caractères",
+            stdout
         );
+        reset_text_attr();
+        getchar();
+        move_cursor_up(1);
+        erase_line();
+        move_cursor_up(1);
+        erase_line();
     }
 
     return valid;
@@ -207,7 +246,14 @@ static bool input_validate_num(char *reject_prompt, char *input, size_t len, siz
     }
 
     if (!valid) {
-        puts(reject_prompt);
+        set_text_attr(yellow, true);
+        fputs(reject_prompt, stdout);
+        reset_text_attr();
+        getchar();
+        move_cursor_up(1);
+        erase_line();
+        move_cursor_up(1);
+        erase_line();
     }
 
     return valid;
@@ -222,36 +268,45 @@ static bool input_validate_email(char *reject_prompt, char *input, size_t len) {
     valid = true;
 
     if (!valid) {
-        puts(reject_prompt);
+        set_text_attr(yellow, true);
+        fputs(reject_prompt, stdout);
+        reset_text_attr();
+        getchar();
+        move_cursor_up(1);
+        erase_line();
+        move_cursor_up(1);
+        erase_line();
     }
 
     return valid;
 }
 
-/* static bool input_validate_street_number(char *input, size_t len) {
-    bool valid;
-
-    (void)input;
-    (void)len;
-
-    valid = true;
-
-    return valid;
-} */
-
-/* static bool input_validate_zip_code(char *input, size_t len) {
+static bool input_validate_street(char *input, size_t len) {
     bool valid;
     size_t i;
+    char c;
 
-    valid = (len == 5);
+    valid = ((len > 0) && (len <= 30));
 
     for (i = 0; i < len && valid; i++) {
-        valid = isdigit(input[i]);
+        c = input[i];
+        valid = (isalpha(c) || (c == ' ') || (c == '-') || isdigit(c));
     }
 
     if (!valid) {
-        puts("Le code postal doit comporter 5 chiffres");
+        set_text_attr(yellow, true);
+        fputs(
+            "Le nom de rue ne peut contenir que des lettres, espaces, tirets et chiffres"
+            "et doit faire entre 1 et 30 caractères",
+            stdout
+        );
+        reset_text_attr();
+        getchar();
+        move_cursor_up(1);
+        erase_line();
+        move_cursor_up(1);
+        erase_line();
     }
 
     return valid;
-} */
+}

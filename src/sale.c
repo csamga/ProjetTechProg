@@ -3,6 +3,7 @@
 #include "product.h"
 #include "input.h"
 #include "terminal.h"
+#include "market.h"
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,17 +13,35 @@ static void sale_add_product(FILE *client_db, float *price_tot);
 void sale_register(void) {
     struct client client;
     char name[32];
-    bool exists;
     int choice;
-    FILE *client_purchase_db;
+    FILE *client_db, *client_purchase_db;
     float price_tot;
+    long pos, end;
 
     new_page();
 
-    input_read_alpha("Nom client : ", name, sizeof name);
-    client_search_by_name(name, &client, &exists);
+    client_db = fopen(CLIENT_DB, "rb");
+    end = 0l;
 
-    if (!exists) {
+    if (client_db) {
+        fseek(client_db, 0l, SEEK_END);
+        end = ftell(client_db);
+    }
+
+    if (end == 0l) {
+        if (client_db != NULL) {
+            fclose(client_db);
+        }
+
+        log_info("La base de données client est vide");
+        return;
+    }
+
+    input_read_alpha("Nom client : ", name, sizeof name);
+    client_search_by_name(client_db, name, &client, &pos);
+    fclose(client_db);
+
+    if (pos == -1l) {
         return;
     }
 
@@ -46,14 +65,31 @@ void sale_register(void) {
 static void sale_add_product(FILE *client_db, float *price_compound) {
     char name[32];
     struct product product;
-    bool exists;
     short quantity;
     float price_detail;
+    FILE *product_db;
+    long pos, end;
+
+    product_db = fopen(PRODUCT_DB, "rb");
+    end = 0l;
+
+    if (product_db) {
+        fseek(product_db, 0l, SEEK_END);
+        end = ftell(product_db);
+    }
+
+    if ((product_db == NULL) || (end == 0l)) {
+        set_text_attr(yellow, true);
+        fputs("La base de données produit est vide", stdout);
+        reset_text_attr();
+        getchar();
+        return;
+    }
 
     input_read_alpha("Nom produit : ", name, sizeof name);
-    product_search_by_name(name, &product, &exists);
+    product_search_by_name(product_db, name, &product, &pos);
 
-    if (exists) {
+    if (pos != -1l) {
         fputs(product.name, client_db);
         fputs("Quantité : ", stdout);
         scanf("%hd", &quantity);

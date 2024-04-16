@@ -2,11 +2,11 @@
 #define BASE_H_INCLUDED
 
 enum modes {
-    MODE_CLIENT,
-    MODE_SUPPLIER,
-    MODE_PRODUCT,
-    MODE_SALE,
-    MODE_QUIT
+    mode_client,
+    mode_supplier,
+    mode_product,
+    mode_sale,
+    mode_quit
 };
 
 void base_register(enum modes mode);

@@ -5,26 +5,27 @@
 #include "product.h"
 #include "sale.h"
 #include "client.h"
+#include "market.h"
+#include "supplier.h"
 
 #include <stdbool.h>
 #include <stdio.h>
-#include <wchar.h>
-#include <locale.h>
 
 enum actions {
-    ACTION_NONE = 0,
-    ACTION_REGISTER = 0,
-    ACTION_MODIFY,
-    ACTION_INSPECT,
-    ACTION_DELETE,
-    ACTION_RETURN,
-    ACTION_QUIT,
-    ACTION_CLIENT_CONSULTER_HISTO_ACHAT = 6,
-    ACTION_FOURNISSEUR_PASSER_COMMANDE = 6,
-    ACTION_FOURNISSEUR_ENREGISTRER_LIVRAISON,
-    ACTION_PRODUIT_CONSULTER_INVENTAIRE = 6,
-    ACTION_VENTE_ENREGISTRER_TRANSAC = 6,
-    ACTION_VENTE_CONSULTER_HISTO_VENTES
+    action_none = 0,
+    action_register = 0,
+    action_modify,
+    action_inspect,
+    action_delete,
+    action_return,
+    action_quit,
+    action_client_consulter_histo_achat = 6,
+    action_sale_register = 6,
+    action_sale_inspect_history,
+    action_supplier_place_order = 6,
+    action_supplier_inspect_order,
+    action_supplier_register_delivery,
+    action_product_consulter_inventaire = 6
 };
 
 enum search_mode {
@@ -32,56 +33,63 @@ enum search_mode {
     SEARCH_NAME
 };
 
-void process_input(enum modes *mode) {
+void process_mode_input(enum modes *mode) {
     int choice;
     bool valid;
 
     do {
-        choice = acquire_input();
-        valid = validate_input(choice, MODE_CLIENT, MODE_QUIT);
+        choice = menu_acquire_input();
+        valid = menu_validate_input(choice, mode_client, mode_quit);
 
         if (!valid) {
-            puts("Veuillez choisir un mode existant");
+            set_text_attr(yellow, true);
+            fputs("Veuillez choisir un mode existant", stdout);
+            reset_text_attr();
+            getchar();
+            move_cursor_up(1);
+            erase_line();
+            move_cursor_up(1);
+            erase_line();
         }
     } while (!valid);
 
     *mode = (enum modes)choice;
 }
 
-void mode_process_input(enum modes mode, enum actions *action) {
+void process_action_input(enum modes mode, enum actions *action) {
     int choice;
     bool valid;
 
     do {
-        choice = acquire_input();
+        choice = menu_acquire_input();
 
         switch (mode) {
-        case MODE_CLIENT:
-            valid = validate_input(
+        case mode_client:
+            valid = menu_validate_input(
                 choice,
-                ACTION_REGISTER,
-                ACTION_CLIENT_CONSULTER_HISTO_ACHAT
+                action_register,
+                action_client_consulter_histo_achat
             );
             break;
-        case MODE_SUPPLIER:
-            valid = validate_input(
+        case mode_supplier:
+            valid = menu_validate_input(
                 choice,
-                ACTION_REGISTER,
-                ACTION_FOURNISSEUR_ENREGISTRER_LIVRAISON
+                action_register,
+                action_supplier_register_delivery
             );
             break;
-        case MODE_PRODUCT:
-            valid = validate_input(
+        case mode_product:
+            valid = menu_validate_input(
                 choice,
-                ACTION_REGISTER,
-                ACTION_PRODUIT_CONSULTER_INVENTAIRE
+                action_register,
+                action_product_consulter_inventaire
             );
             break;
-        case MODE_SALE:
-            valid = validate_input(
+        case mode_sale:
+            valid = menu_validate_input(
                 choice + 4,
-                ACTION_RETURN,
-                ACTION_VENTE_CONSULTER_HISTO_VENTES
+                action_return,
+                action_sale_inspect_history
             );
             *action = (enum actions)choice + 4;
             return;
@@ -91,7 +99,14 @@ void mode_process_input(enum modes mode, enum actions *action) {
         }
 
         if (!valid) {
-            puts("Veuillez choisir une action existante");
+            set_text_attr(yellow, true);
+            fputs("Veuillez choisir une action existante", stdout);
+            reset_text_attr();
+            getchar();
+            move_cursor_up(1);
+            erase_line();
+            move_cursor_up(1);
+            erase_line();
         }
     } while (!valid);
 
@@ -163,8 +178,9 @@ int main(void) {
         "Consulter historique achat",
     };
 
-    char *action_supplier_str[2] = {
+    char *action_supplier_str[3] = {
         "Passer commande",
+        "Consulter commande",
         "Enregistrer livraison",
     };
 
@@ -184,6 +200,8 @@ int main(void) {
 
     bool quit;
 
+    market_create_db();
+
     use_screen_buffer(screen_buffer_alternative);
     show_cursor(false);
 
@@ -192,87 +210,90 @@ int main(void) {
     while (!quit) {
         new_page();
 
-        puts("Choisir mode d'action:");
+        set_text_attr(normal, true);
+        puts("Choisir mode d'action");
+        reset_text_attr();
         list_print(mode_str, COUNTOF(mode_str), 1);
 
-        process_input(&mode);
+        process_mode_input(&mode);
 
-        quit = (mode == MODE_QUIT);
-        action = ACTION_NONE;
+        quit = (mode == mode_quit);
+        action = action_none;
 
-        while ((action != ACTION_RETURN) && !quit) {
+        while ((action != action_return) && !quit) {
             new_page();
 
+            set_text_attr(normal, true);
             printf("Mode %s\n", mode_str[mode]);
+            reset_text_attr();
 
-            if (mode != MODE_SALE) {
+            if (mode != mode_sale) {
                 list_print(action_base_str, COUNTOF(action_base_str), 1);
             } else {
-                list_print(&action_base_str[ACTION_RETURN], 2, 1);
+                list_print(&action_base_str[action_return], 2, 1);
             }
 
             switch (mode) {
-            case MODE_CLIENT:
+            case mode_client:
                 list_print(action_client_str, COUNTOF(action_client_str), 7);
                 break;
-            case MODE_SUPPLIER:
+            case mode_supplier:
                 list_print(action_supplier_str, COUNTOF(action_supplier_str), 7);
                 break;
-            case MODE_PRODUCT:
+            case mode_product:
                 list_print(action_product_str, COUNTOF(action_product_str), 7);
                 break;
-            case MODE_SALE:
+            case mode_sale:
                 list_print(action_sale_str, COUNTOF(action_sale_str), 3);
                 break;
             default:
                 break;
             }
 
-            mode_process_input(mode, &action);
+            process_action_input(mode, &action);
 
             switch (action) {
-            case ACTION_REGISTER:
+            case action_register:
                 base_register(mode);
                 break;
-            case ACTION_MODIFY:
+            case action_modify:
                 base_modify(mode);
                 break;
-            case ACTION_INSPECT:
+            case action_inspect:
                 base_inspect(mode);
                 break;
-            case ACTION_DELETE:
+            case action_delete:
                 base_delete(mode);
                 break;
-            case ACTION_RETURN:
+            case action_return:
                 break;
-            case ACTION_QUIT:
+            case action_quit:
                 quit = true;
                 break;
             default:
                 break;
-                /* puts("implémenter");
-                getchar();
-                break; */
+            }
+
+            if (quit) {
+                break;
             }
 
             switch (mode) {
-            case MODE_CLIENT:
+            case mode_client:
                 switch (action) {
-                case ACTION_CLIENT_CONSULTER_HISTO_ACHAT:
+                case action_client_consulter_histo_achat:
                     client_print_history();
                     break;
                 default:
                     break;
                 }
                 break;
-            case MODE_SUPPLIER:
-                break;
-            case MODE_SALE:
+            case mode_sale:
                 switch (action) {
-                case ACTION_VENTE_ENREGISTRER_TRANSAC:
+                case action_sale_register:
                     sale_register();
                     break;
-                case ACTION_VENTE_CONSULTER_HISTO_VENTES:
+                case action_sale_inspect_history:
                     puts("implémenter histo ventes");
                     getchar();
                     break;
@@ -280,14 +301,31 @@ int main(void) {
                     break;
                 }
                 break;
-            case MODE_PRODUCT:
+            case mode_supplier:
                 switch (action) {
-                case ACTION_PRODUIT_CONSULTER_INVENTAIRE:
+                case action_supplier_place_order:
+                    supplier_place_order();
+                    break;
+                case action_supplier_inspect_order:
+                    supplier_inspect_order();
+                    break;
+                case action_supplier_register_delivery:
+                    supplier_register_delivery();
+                    break;
+                default:
+                    break;
+                }
+                break;
+            case mode_product:
+                switch (action) {
+                case action_product_consulter_inventaire:
                     product_inspect_inventory();
                     break;
                 default:
                     break;
                 }
+                break;
+            default:
                 break;
             }
         }

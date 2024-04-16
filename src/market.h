@@ -12,9 +12,15 @@
 #define PER_SUPPLIER_DB_PREFIX "db/suppliers/supplier_"
 #define PER_SUPPLIER_DB_SUFFIX "_db.dat"
 
+void market_create_db(void);
+
 void market_client_added(void);
 void market_supplier_added(void);
 void market_product_added(void);
+
+void market_client_removed(void);
+void market_supplier_removed(void);
+void market_product_removed(void);
 
 unsigned short market_get_n_clients(void);
 unsigned short market_get_n_suppliers(void);
