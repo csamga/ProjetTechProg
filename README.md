@@ -86,8 +86,8 @@ En parallèle, l'arborescence de dossiers de bases de données située dans le
 dossier ```db/``` est créée. Seuls les dossiers sont créés. Le programme est
 responsable de l'ouverture/fermeture des fichiers. 
 
-[!CAUTION]
-Il faut absolument éviter de supprimer le dossier ```db/``` afin de ne pas influencer le bon fonctionnement du programme.
+> [!CAUTION]
+> Il faut absolument éviter de supprimer le dossier ```db/``` afin de ne pas influencer le bon fonctionnement du programme.
 
 ### Pour compiler le programme
 
