@@ -61,22 +61,22 @@ actions spécifiques.
 
 ### Vente
 - **Enregistrer une transaction**
-    - Enregistre la vente d'un ou plusieurs produits à un client en modifiant
-    le stock des articles vendus. Il est nécessaire que le client existe et que
-    le stock de chaque produit demandé ne soit pas nul.
+    - Enregistre la vente d'un ou plusieurs produits à un client en mettant à
+    jour le stock des articles vendus. Il est nécessaire que le client existe et
+    que le stock de chaque produit demandé ne soit pas nul.
 
 > [!NOTE]
-> Il existe aussi l'action **Retour** et **Quitter** qui permettent
+> Il existe également les actions **Retour** et **Quitter** qui permettent
 respectivement de revenir au choix des modes et de quitter le programme.
 
 ## Bases de données
 
-Les bases de données sont stockées dans le dosser ```db/```. Le programme fait
+Les bases de données sont stockées dans le dossier ```db/```. Le programme fait
 usage d'une base de données globale par item (produit, client, fournisseur).
 
 - La base de données article ```db/product_db.dat``` contient tous les
 produits et leurs informations (identifiant, libellé, marque, provenance, masse,
-prix).
+prix, stock disponible).
 - La base de données client ```db/client_db.dat``` contient tous les clients
 et leurs informations (identifiant, nom, prénom, téléphone, email, adresse, nom
 du fichier de la base de données dédiée).
@@ -89,7 +89,7 @@ de données respective.
 
 - L'historique d'achat de chaque client ```db/clients/client_<ID>_db.dat```
 conserve chaque achat (produit, quantité, prix sous-total, prix total).
-- L'historique d'achat de chaque fournisseur
+- L'historique des commandes passés à chaque fournisseur
 ```db/suppliers/supplier_<ID>_db.dat```
 conserve chaque commande passée (identifiant commande, tableau d'identifiants
 produit, tableau de quantité par produit, nombre de produits, prix total).
@@ -98,10 +98,10 @@ produit, tableau de quantité par produit, nombre de produits, prix total).
 
 L'outil de gestion est divisé en "pages" qui se succèdent.
 
-- On choisit en premier le mode d'action parmi les modes présentés ci-dessus.
-- Une nouvelle page permet ensuite de sélectioner une action contextuelle à
+1. On choisit en premier le mode d'action parmi les modes présentés ci-dessus.
+2. Une nouvelle page permet ensuite de sélectioner une action contextuelle à
 réaliser.
-- Enfin, l'action demande de saisir certaines informations dans une dernière
+3. Enfin, l'action demande de saisir certaines informations dans une dernière
 page.
 Après achèvement de l'action, on retourne à l'étape du choix de l'action dans le
 même mode.
@@ -109,7 +109,7 @@ même mode.
 > [!NOTE]
 > Les couleurs, nouvelles pages et positionnement du curseur ont été rendus
 possibles grâce à l'utilisation de
-[Séquences d'Échappenent ANSI](https://en.wikipedia.org/wiki/ANSI_escape_code)
+[séquences d'échappenent ANSI](https://en.wikipedia.org/wiki/ANSI_escape_code)
 (ANSI Escape codes).
 
 ## Remarques
@@ -125,10 +125,10 @@ n'importe quel fournisseur peut livrer n'importe quel produit.
 
 Le fichier ```Makefile``` est conçu pour détecter automatiquement les fichiers
 ```*.c``` situés dans le dossier ```src/```. Le résultat de la compilation est
-placé dans le dossier ```tmp/```. Enfin, les objets sont liés et l'exécutable
-est placé dans le dossier ```bin/```.
+placé dans le dossier ```tmp/```. Enfin, les objets ```*.o```sont liés et
+l'exécutable est placé dans le dossier ```bin/```.
 
-En parallèle, l'arborescence de dossiers de bases de données située dans le
+En parallèle, l'arborescence de dossiers des bases de données située dans le
 dossier ```db/``` est créée. Seuls les dossiers sont créés. Le programme est
 responsable de la création/ouverture/fermeture des fichiers. 
 
@@ -164,15 +164,13 @@ Deux options :
     - [x] Fournisseur
     - [x] Produit
     - [x] Commande
-    - [x] Livraison
-    - [x] Transaction
 - [x] Implémenter bases de données
     - [x] Client
     - [x] Produit
     - [x] Fournisseur
     - [x] Implémenter base de données par structure
         - [x] Historique achat client
-        - [x] Historique commandes fournisseur
+        - [ ] Historique commandes fournisseur
         - [x] Commandes en attente
         - [x] Inventaire
 - [x] Implémenter confirmation suppression
@@ -184,6 +182,6 @@ Deux options :
 - [ ] Modifier champs adresse
 - [ ] Simplifier fonctions market
 - [x] Ajouter retour ligne après indication mode
-- [ ] Gérer remise pour clients (plusieurs ventes)
+- [ ] Implémenter dégradations tarifaires (toutes les n ventes, n à définir)
 - [ ] Gérer sessions employé/gérant
 - [ ] Proposer enregistrement/commande quand pas de produits/clients/stock vide
