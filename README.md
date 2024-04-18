@@ -69,6 +69,31 @@ actions spécifiques.
 > Il existe aussi l'action **Retour** et **Quitter** qui permettent
 respectivement de revenir au choix des modes et de quitter le programme.
 
+## Bases de données
+
+Les bases de données sont stockées dans le dosser ```db/```. Le programme fait
+usage d'une base de données globale par item (produit, client, fournisseur).
+
+- La base de données article ```db/product_db.dat``` contient tous les
+produits et leurs informations (identifiant, libellé, marque, provenance, masse,
+prix).
+- La base de données client ```db/client_db.dat``` contient tous les clients
+et leurs informations (identifiant, nom, prénom, téléphone, email, adresse, nom
+du fichier de la base de données dédiée).
+- La base de données fournisseur ```db/supplier_db.dat``` contient tous les
+fournisseurs et leurs informations (identifiant, nom, prénom, téléphone, email,
+adresse, nom du fichier de la base de données dédiée).
+
+Par ailleurs, les items **Client** et **Fournisseur** possèdent chacun une base
+de données respective.
+
+- L'historique d'achat de chaque client ```db/clients/client_<ID>_db.dat```
+conserve chaque achat (produit, quantité, prix sous-total, prix total).
+- L'historique d'achat de chaque fournisseur
+```db/suppliers/supplier_<ID>_db.dat```
+conserve chaque commande passée (identifiant commande, tableau d'identifiants
+produit, tableau de quantité par produit, nombre de produits, prix total).
+
 ## Interface
 
 L'outil de gestion est divisé en "pages" qui se succèdent.
@@ -82,7 +107,7 @@ Après achèvement de l'action, on retourne à l'étape du choix de l'action dan
 même mode.
 
 > [!NOTE]
-> Les couleurs, nouvelles pages et mouvements du curseur ont été rendus
+> Les couleurs, nouvelles pages et positionnement du curseur ont été rendus
 possibles grâce à l'utilisation de
 [Séquences d'Échappenent ANSI](https://en.wikipedia.org/wiki/ANSI_escape_code)
 (ANSI Escape codes).
@@ -105,7 +130,7 @@ est placé dans le dossier ```bin/```.
 
 En parallèle, l'arborescence de dossiers de bases de données située dans le
 dossier ```db/``` est créée. Seuls les dossiers sont créés. Le programme est
-responsable de l'ouverture/fermeture des fichiers. 
+responsable de la création/ouverture/fermeture des fichiers. 
 
 > [!CAUTION]
 > Il faut absolument éviter de supprimer le dossier ```db/``` afin de ne pas
