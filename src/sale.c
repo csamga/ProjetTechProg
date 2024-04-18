@@ -58,6 +58,8 @@ void sale_register(void) {
         }
     } while (!finished);
 
+    fprintf(client_purchase_db, BOLD BLUE "Total dû : %.2f€\n\n" NORMAL, price_tot);
+
     fclose(client_purchase_db);
     fclose(product_db);
 
@@ -88,8 +90,6 @@ static bool sale_add_product(FILE *client_db, FILE *product_db, float *price_com
     }
 
     if (pos != -1l) {
-        fputs(product.name, client_db);
-
         do {
             input_read_positive_int(
                 "Quantité : ",
@@ -111,11 +111,16 @@ static bool sale_add_product(FILE *client_db, FILE *product_db, float *price_com
             valid = (quantity <= product.quantity);
 
             if (!valid) {
-                log_info(
+                log_warning(
                     true,
                     "La quantité demandée est supérieure au stock disponible (%hu)",
                     product.quantity
                 );
+
+                move_cursor_up(1);
+                erase_line();
+                move_cursor_up(1);
+                erase_line();
                 continue;
             }
         } while (!valid);
@@ -127,10 +132,10 @@ static bool sale_add_product(FILE *client_db, FILE *product_db, float *price_com
 
             fprintf(
                 client_db,
-                "\n%d\n%.2f\n%.2f\n\n",
+                "Produit : %s x %d (%.2f€)\n",
+                product.label,
                 quantity,
-                price_detail,
-                *price_compound
+                price_detail
             );
 
             product.quantity -= quantity;

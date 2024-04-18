@@ -152,6 +152,14 @@ Deux options :
 (2) $ ./bin/projet
 ```
 
+### Pour nettoyer l'arborescence
+
+Supprime le contenu des dossiers ```bin/``` et ```tmp/```
+
+```
+$ make clean
+```
+
 ## TODO
 - [x] Implémenter modes
 - [x] Implémenter actions base

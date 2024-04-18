@@ -405,12 +405,12 @@ void supplier_inspect_order(void) {
                     product_tot = product.price_euro * order.quantity[i_product];
                     printf(
                         "Produit : %s x %hu (%.2f€)\n",
-                        product.name, order.quantity[i_product], product_tot
+                        product.label, order.quantity[i_product], product_tot
                     );
                 }
             }
 
-            log_info(false, "Total dû (€) : %.2f\n", order.total_euro);
+            log_info(false, "Total dû : %.2f€\n", order.total_euro);
         }
     }
 
@@ -492,6 +492,7 @@ void supplier_register_delivery(void) {
 
             if (input_confirm("Voulez-vous consulter les commandes du fournisseur ?")) {
                 /* afficher les commandes */
+                new_page();
                 supplier_inspect_order();
                 new_page();
                 log_title("Enregistrement livraison");

@@ -1,19 +1,17 @@
-#define _POSIX_C_SOURCE 200112L
 #include "product.h"
+
 #include "input.h"
+#include "market.h"
 #include "terminal.h"
 #include "utils.h"
-#include "market.h"
 
 #include <stdio.h>
 #include <string.h>
-#include <wchar.h>
-#include <locale.h>
 
 static char *field_str[] = {
-    "Nom",
+    "Libellé",
     "Marque",
-    "Origine",
+    "Provenance",
     "Prix",
     "Masse/volume",
     "Retour"
@@ -36,7 +34,6 @@ void product_register(void) {
 
     product.id = market_get_n_products();
     product.quantity = 0;
-
     product_read(&product);
 
     fwrite(&product, sizeof product, 1, product_db);
@@ -53,33 +50,26 @@ void product_modify(void) {
     char name[32];
     bool finished;
     int choice;
-    long pos, end;
+    long pos;
+    bool modified;
 
     log_title("Modification produit");
     
     product_db = fopen(PRODUCT_DB, "rb+");
-    end = 0l;
 
-    if (product_db) {
-        fseek(product_db, 0l, SEEK_END);
-        end = ftell(product_db);
-    }
-
-    if (end == 0l) {
-        if (product_db != NULL) {
-            fclose(product_db);
-        }
-
-        log_info(true, "La base de données produit est vide");
+    if (!product_db_exists(product_db)) {
         return;
     }
 
-    input_read_alpha("Nom : ", name, sizeof name);
+    input_read_alpha("Libellé : ", name, sizeof name);
     product_search_by_name(product_db, name, &product, &pos);
 
     if (pos == -1l) {
+        fclose(product_db);
         return;
     }
+
+    modified = false;
 
     do {
         new_page();
@@ -92,71 +82,84 @@ void product_modify(void) {
 
         switch (choice) {
         case 0:
-            printf("\nAncien nom : %s\n", product.name);
-            input_read_alpha("Nouveau nom : ", product.name, sizeof product.name);
+            printf("\nAncien libellé  : %s\n", product.label);
+            input_read_alpha(
+                "Nouveau libellé : ",
+                product.label,
+                sizeof product.label
+            );
+            modified = true;
             break;
         case 1:
             printf("\nAncienne marque : %s\n", product.brand);
-            input_read_alpha("Nouvelle marque : ", product.brand, sizeof product.brand);
+            input_read_alpha(
+                "Nouvelle marque : ",
+                product.brand,
+                sizeof product.brand
+            );
+            modified = true;
             break;
         case 2:
-            printf("\nAncienne origine : %s\n", product.origin);
-            input_read_alpha("Nouvelle origine : ", product.origin, sizeof product.origin);
+            printf("\nAncienne provenance : %s\n", product.origin);
+            input_read_alpha(
+                "Nouvelle provenance : ",
+                product.origin,
+                sizeof product.origin
+            );
+            modified = true;
             break;
         case 3:
-            printf("\nAncien prix : %.2f\n", product.price_euro);
+            printf("\nAncien prix  : %.2f\n", product.price_euro);
             input_read_positive_float(
                 "Nouveau prix : ",
                 "Le prix doit être positif",
                 &product.price_euro
             );
+            modified = true;
             break;
         case 4:
-            printf("\nAncienne masse/volume (kg/L) : %.3f\n", product.mass_kg_vol_l);
+            printf(
+                "\nAncienne masse/volume (kg/L) : %.3f\n",
+                product.mass_kg_vol_l
+            );
             input_read_positive_float(
                 "Nouvelle masse/volume (kg/L) : ",
                 "La masse/volume doit être positive",
                 &product.mass_kg_vol_l
             );
+            modified = true;
             break;
         case 5:
             finished = true;
         }
     } while (!finished);
 
-    fseek(product_db, pos, SEEK_SET);
-    fwrite(&product, sizeof product, 1, product_db);
-    fclose(product_db);
+    if (modified) {
+        fseek(product_db, pos, SEEK_SET);
+        fwrite(&product, sizeof product, 1, product_db);
+        log_success("Produit modifié avec succès");
+    } else {
+        log_info(true, "Le produit n'a pas été modifié");
+    }
 
-    log_success("Produit modifié avec succès");
+    fclose(product_db);
 }
 
 void product_inspect(void) {
     struct product product;
     char name[32];
     FILE *product_db;
-    long pos, end;
+    long pos;
 
     log_title("Informations produit");
 
     product_db = fopen(PRODUCT_DB, "rb");
-    end = 0l;
 
-    if (product_db) {
-        fseek(product_db, 0l, SEEK_END);
-        end = ftell(product_db);
-    }
-
-    if (end == 0l) {
-        if (product_db != NULL) {
-            fclose(product_db);
-        }
-
-        log_info(true, "La base de données produit est vide");
+    if (!product_db_exists(product_db)) {
         return;
     }
 
-    input_read_alpha("Nom : ", name, sizeof name);
+    input_read_alpha("Libellé : ", name, sizeof name);
     product_search_by_name(product_db, name, &product, &pos);
 
     if (pos != -1l) {
@@ -169,64 +172,59 @@ void product_inspect(void) {
 }
 
 void product_delete(void) {
-    FILE *old_product_db, *new_product_db;
+    FILE *product_db, *new_product_db;
     struct product product;
     char name[32];
-    bool valid;
-    long pos, end;
+    bool delete;
+    long pos;
 
     log_title("Suppression produit");
 
-    old_product_db = fopen(PRODUCT_DB, "rb+");
-    end = 0l;
+    product_db = fopen(PRODUCT_DB, "rb");
 
-    if (old_product_db) {
-        fseek(old_product_db, 0l, SEEK_END);
-        end = ftell(old_product_db);
-    }
-
-    if (end == 0l) {
-        if (old_product_db != NULL) {
-            fclose(old_product_db);
-        }
-
-        log_info(true, "La base de données produit est vide");
+    if (!product_db_exists(product_db)) {
         return;
     }
 
-    input_read_alpha("Nom : ", name, sizeof name);
-    product_search_by_name(old_product_db, name, NULL, &pos);
+    input_read_alpha("Libellé : ", name, sizeof name);
+    product_search_by_name(product_db, name, NULL, &pos);
 
     if (pos == -1l) {
+        fclose(product_db);
         return;
     }
 
-    valid = input_confirm("Voulez vous vraiment supprimer le produit ?");
+    delete = input_confirm("Voulez vous vraiment supprimer le produit ?");
 
-    if (!valid) {
+    if (!delete) {
+        log_info(true, "Le produit n'a pas été supprimé");
+        fclose(product_db);
         return;
     }
 
-    new_product_db = fopen("db/tmp.dat", "a");
+    new_product_db = fopen("db/new_product_db.dat", "ab");
 
     if (new_product_db == NULL) {
-        log_error("erreur: impossible d'ouvrir db/tmp.dat");
+        log_error("erreur: impossible d'ouvrir db/new_product_db.dat");
+        fclose(product_db);
         return;
     }
 
-    while (!feof(old_product_db)) {
-        if (fread(&product, sizeof product, 1, old_product_db)) {
-            if (strcmp(name, product.name) != 0) {
+    rewind(product_db);
+
+    while (!feof(product_db)) {
+        if (fread(&product, sizeof product, 1, product_db)) {
+            if (strcmp(name, product.label) != 0) {
                 fwrite(&product, sizeof product, 1, new_product_db);
             }
         }
     }
 
-    fclose(old_product_db);
-    fclose(new_product_db);
-
+    fclose(product_db);
     remove(PRODUCT_DB);
-    rename("db/tmp.dat", PRODUCT_DB);
+
+    fclose(new_product_db);
+    rename("db/new_product_db.dat", PRODUCT_DB);
 
     log_success("Produit supprimé avec succès");
 }
@@ -234,38 +232,28 @@ void product_delete(void) {
 void product_inspect_inventory(void) {
     FILE *product_db;
     struct product product;
-    long end;
 
     new_page();
 
     log_title("Inventaire");
 
     product_db = fopen(PRODUCT_DB, "rb");
-    end = 0l;
 
-    if (product_db) {
-        fseek(product_db, 0l, SEEK_END);
-        end = ftell(product_db);
-    }
-
-    if (end == 0l) {
-        if (product_db != NULL) {
-            fclose(product_db);
-        }
-
-        log_info(true, "La base de donées produit est vide");
+    if (!product_db_exists(product_db)) {
         return;
     }
 
     rewind(product_db);
 
-    puts("╭──────────────┬──────────────┬──────────────┬──────────┬─────────────────────┬──────────╮");
+    puts(
+        "╭──────────────┬──────────────┬──────────────┬──────────┬─────────────────────┬──────────╮"
+    );
     printf(
-        "│ %-12s │ %-12s │ %-12s │ %-8s │ %-19s │ %-8s │\n"
+        "│ %-12s  │ %-12s │ %-12s │ %-8s │ %-19s │ %-8s │\n"
         "├──────────────┼──────────────┼──────────────┼──────────┼─────────────────────┼──────────┤\n",
-        "Nom",
+        "Libellé",
         "Marque",
-        "Origine",
+        "Provenance",
         "Prix (€)",
         "Masse/volume (kg/L)",
         "Quantité"
@@ -276,7 +264,7 @@ void product_inspect_inventory(void) {
             printf(
                 "│ %-12.12s │ %-12.12s │ %-12.12s │ %-8.2f │ %-19.3f │ %8hd │\n"
                 "├──────────────┼──────────────┼──────────────┼──────────┼─────────────────────┼──────────┤\n",
-                product.name,
+                product.label,
                 product.brand,
                 product.origin,
                 product.price_euro,
@@ -308,15 +296,16 @@ void product_search_by_name(
 
     exists = false;
 
-    while (!feof(product_db) && (!exists)) {
+    while (!feof(product_db) && !exists) {
         fread(&tmp, sizeof tmp, 1, product_db);
-        exists = (strcmp(tmp.name, name) == 0);
+        exists = (strcmp(tmp.label, name) == 0);
     }
 
     if (exists) {
         if (product) {
             *product = tmp;
         }
+
         if (pos) {
             *pos = ftell(product_db) - sizeof tmp;
         }
@@ -389,8 +378,8 @@ bool product_db_exists(FILE *product_db) {
 static void product_read(struct product *product) {
     log_title("Saisir informations produit");
 
-    /* Saisie du nom */
-    input_read_alpha("Nom : ", product->name, sizeof product->name);
+    /* Saisie du libellé */
+    input_read_alpha("Libellé : ", product->label, sizeof product->label);
 
     /* Saisie de la marque */
     input_read_alpha("Marque : ", product->brand, sizeof product->brand);
@@ -414,11 +403,20 @@ static void product_read(struct product *product) {
 }
 
 static void product_print(struct product *product) {
-    printf("Identifiant : %hu\n", product->id);
-    printf("Nom : %s\n", product->name);
-    printf("Marque : %s\n", product->brand);
-    printf("Origine : %s\n", product->origin);
-    printf("Prix : %.2f€\n", product->price_euro);
-    printf("Masse/volume (kg/L) : %.3f\n", product->mass_kg_vol_l);
-    printf("Quantité : %hd\n", product->quantity);
+    printf(
+        "Identifiant         : %hu\n"
+        "Libellé             : %s\n"
+        "Marque              : %s\n"
+        "Provenance          : %s\n"
+        "Prix (€)            : %.2f\n"
+        "Masse/volume (kg/L) : %.3f\n"
+        "Stock               : %hd\n",
+        product->id,
+        product->label,
+        product->brand,
+        product->origin,
+        product->price_euro,
+        product->mass_kg_vol_l,
+        product->quantity
+    );
 }

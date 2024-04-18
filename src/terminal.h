@@ -7,6 +7,7 @@
 #define CSI "\x1b["
 #define BOLD CSI "1m"
 #define NORMAL CSI "0m"
+#define BLUE CSI "94m"
 
 enum screen_buffer {
     screen_buffer_default,

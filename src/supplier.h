@@ -20,7 +20,6 @@ struct supplier {
 };
 
 struct order {
-    unsigned short supplier_id;
     unsigned short order_id;
     unsigned short product_id[MAX_PRODUCTS_PER_COMMAND];
     unsigned short quantity[MAX_PRODUCTS_PER_COMMAND];

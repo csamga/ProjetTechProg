@@ -9,7 +9,7 @@ src = $(wildcard $(src_dir)/*.c)
 obj = $(patsubst $(src_dir)/%.c,$(tmp_dir)/%.o,$(src))
 projet = $(bin_dir)/projet
 
-all: projet fichiers
+all: projet folders
 
 projet: $(projet)
 
@@ -21,7 +21,7 @@ $(tmp_dir)/%.o: $(src_dir)/%.c
 	mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-fichiers:
+folders:
 	-@mkdir db 2>/dev/null || true
 	-@mkdir db/clients 2>/dev/null || true
 	-@mkdir db/suppliers 2>/dev/null || true

@@ -6,7 +6,7 @@
 
 struct product {
     unsigned short id;
-    char name[32];
+    char label[32];
     char brand[32];
     char origin[32];
     float price_euro;
@@ -20,8 +20,18 @@ void product_inspect(void);
 void product_delete(void);
 void product_inspect_inventory(void);
 
-void product_search_by_name(FILE *product_db, const char *name, struct product *product, long *pos);
-void product_search_by_id(FILE *product_db, unsigned short id, struct product *product, long *pos);
+void product_search_by_name(
+    FILE *product_db,
+    const char *name,
+    struct product *product,
+    long *pos
+);
+void product_search_by_id(
+    FILE *product_db,
+    unsigned short id,
+    struct product *product,
+    long *pos
+);
 
 bool product_db_exists(FILE *product_db);
 
