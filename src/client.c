@@ -1,7 +1,8 @@
 #include "client.h"
+
 #include "input.h"
-#include "terminal.h"
 #include "market.h"
+#include "terminal.h"
 #include "utils.h"
 
 #include <string.h>
@@ -157,7 +158,7 @@ void client_inspect(void) {
         return;
     }
 
-    /* chercher le client dans la base de données */
+    /* chercher le client dans la db */
     input_read_alpha("Nom : ", name, sizeof name);
     client_search_by_name(client_db, name, &client, &pos);
 
@@ -196,9 +197,10 @@ void client_delete(void) {
         return;
     }
 
-    delete = input_confirm_delete("Voulez vous vraiment supprimer le client ?");
+    delete = input_confirm("Voulez vous vraiment supprimer le client ?");
 
     if (!delete) {
+        log_info(true, "Le client n'a pas été supprimé");
         fclose(client_db);
         return;
     }
@@ -270,7 +272,7 @@ void client_print_history(void) {
         return;
     }
 
-    /* déterminer si la base de donnée du client est vide */
+    /* déterminer si la db du client est vide */
     fseek(per_client_db, 0l, SEEK_END);
     pos = ftell(per_client_db);
 

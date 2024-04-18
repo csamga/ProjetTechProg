@@ -1,6 +1,8 @@
 #ifndef MARKET_H_INCLUDED
 #define MARKET_H_INCLUDED
 
+#include "supplier.h"
+
 #define MARKET_DB "db/market_db.dat"
 #define CLIENT_DB "db/client_db.dat"
 #define SUPPLIER_DB "db/supplier_db.dat"
@@ -25,5 +27,7 @@ void market_product_removed(void);
 unsigned short market_get_n_clients(void);
 unsigned short market_get_n_suppliers(void);
 unsigned short market_get_n_products(void);
+
+void market_update_stocks(struct order *order);
 
 #endif

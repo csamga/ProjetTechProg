@@ -1,5 +1,7 @@
 #include "market.h"
 
+#include "product.h"
+
 #include <stdio.h>
 
 struct market {
@@ -205,4 +207,24 @@ unsigned short market_get_n_products(void) {
     }
 
     return n_products;
+}
+
+void market_update_stocks(struct order *order) {
+    FILE *product_db;
+    struct product product;
+    unsigned short i, product_id;
+    long pos;
+
+    product_db = fopen(PRODUCT_DB, "rb+");
+
+    for (i = 0; i < order->n_products; i++) {
+        product_id = order->product_id[i];
+        product_search_by_id(product_db, product_id, &product, &pos);
+
+        product.quantity += order->quantity[i];
+        fseek(product_db, pos, SEEK_SET);
+        fwrite(&product, sizeof product, 1, product_db);
+    }
+
+    fclose(product_db);
 }

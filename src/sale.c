@@ -8,19 +8,19 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define SALES_MARGIN 25.0f/100.0f
+
 static bool sale_add_product(FILE *client_db, FILE *product_db, float *price_compound);
 
 void sale_register(void) {
     struct client client;
     char name[32];
-    int choice;
     FILE *client_db, *client_purchase_db, *product_db;
     float price_tot;
     long pos;
     short n_products;
     bool finished;
 
-    new_page();
     log_title("Enregistrement transaction");
 
     client_db = fopen(CLIENT_DB, "rb");
@@ -51,13 +51,7 @@ void sale_register(void) {
             n_products++;
         }
 
-        log_warning(false, "Continuer ? [O/n] ");
-        choice = getchar();
-        if (choice != '\n') {
-            input_flush_stdin();
-        }
-
-        finished = (choice == 'n' || choice == 'N' || choice == '\x1b');
+        finished = !input_confirm("Voulez-vous continuer ?");
         
         if (!finished) {
             puts("");
@@ -128,6 +122,7 @@ static bool sale_add_product(FILE *client_db, FILE *product_db, float *price_com
 
         if (valid) {
             price_detail = product.price_euro * (float)quantity;
+            price_detail *= (1 + SALES_MARGIN);
             *price_compound += price_detail;
 
             fprintf(

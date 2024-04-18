@@ -15,7 +15,7 @@ void address_read(struct address *address) {
     );
 
     /* saisie du nom */
-    input_read_street("Rue : ", address->name, sizeof address->name);
+    input_read_alphanum("Rue : ", address->name, sizeof address->name);
 
     /* saisie du code postal */
     input_read_num(
