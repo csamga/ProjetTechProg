@@ -5,21 +5,19 @@
 #include <stdio.h>
 
 void address_read(struct address *address) {
-    set_text_attr(normal, true);
-    puts("\nInformations adresse");
-    reset_text_attr();
+    log_title("\nInformations adresse");
 
-    /* Saisie du numéro */
+    /* saisie du numéro */
     input_read_positive_int(
         "Numéro : ",
         "Le numéro de rue doit être positif",
         (int *)&address->num
     );
 
-    /* Saisie du nom */
-    input_read_street("Nom : ", address->name, sizeof address->name);
+    /* saisie du nom */
+    input_read_street("Rue : ", address->name, sizeof address->name);
 
-    /* Saisie du code postal */
+    /* saisie du code postal */
     input_read_num(
         "Code postal : ",
         "Le code postal doit contenir exactement 5 chiffres",
@@ -28,13 +26,13 @@ void address_read(struct address *address) {
         5
     );
 
-    /* Saisie de la ville */
+    /* saisie de la ville */
     input_read_alpha("Ville : ", address->city, sizeof address->city);
 }
 
 void address_inspect(const struct address *address) {
     printf(
-        "Adresse : %hu Rue %s %s %s\n",
+        "Adresse     : %hu Rue %s %s %s\n",
         address->num,
         address->name,
         address->zip_code,

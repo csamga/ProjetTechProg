@@ -8,38 +8,32 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-static void sale_add_product(FILE *client_db, float *price_tot);
+static bool sale_add_product(FILE *client_db, FILE *product_db, float *price_compound);
 
 void sale_register(void) {
     struct client client;
     char name[32];
     int choice;
-    FILE *client_db, *client_purchase_db;
+    FILE *client_db, *client_purchase_db, *product_db;
     float price_tot;
-    long pos, end;
+    long pos;
+    short n_products;
+    bool finished;
 
     new_page();
+    log_title("Enregistrement transaction");
 
     client_db = fopen(CLIENT_DB, "rb");
-    end = 0l;
+    product_db = fopen(PRODUCT_DB, "rb+");
 
-    if (client_db) {
-        fseek(client_db, 0l, SEEK_END);
-        end = ftell(client_db);
-    }
-
-    if (end == 0l) {
-        if (client_db != NULL) {
-            fclose(client_db);
-        }
-
-        log_info("La base de données client est vide");
+    if (!client_db_exists(client_db) || !product_db_exists(product_db)) {
         return;
     }
 
     input_read_alpha("Nom client : ", name, sizeof name);
     client_search_by_name(client_db, name, &client, &pos);
     fclose(client_db);
+    puts("");
 
     if (pos == -1l) {
         return;
@@ -47,63 +41,110 @@ void sale_register(void) {
 
     client_purchase_db = fopen(client.purchase_db_file_name, "a");
 
-    new_page();
-
     price_tot = 0.0f;
+    n_products = 0;
+
+    log_title("Ajout produits");
 
     do {
-        sale_add_product(client_purchase_db, &price_tot);
+        if (sale_add_product(client_purchase_db, product_db, &price_tot)) {
+            n_products++;
+        }
 
-        puts("Continuer ? (O/n)");
+        log_warning(false, "Continuer ? [O/n] ");
         choice = getchar();
-        input_flush_stdin();
-    } while (choice == 'o' || choice == 'O' || choice == '\x0d');
+        if (choice != '\n') {
+            input_flush_stdin();
+        }
+
+        finished = (choice == 'n' || choice == 'N' || choice == '\x1b');
+        
+        if (!finished) {
+            puts("");
+        }
+    } while (!finished);
 
     fclose(client_purchase_db);
+    fclose(product_db);
+
+    if (n_products > 0) {
+        log_success(
+            "Vente enregistrée avec succès\n"
+            "Les stocks ont été mis à jour"
+        );
+    } else {
+        log_info(true, "Aucun produit n'a été vendu");
+    }
 }
 
-static void sale_add_product(FILE *client_db, float *price_compound) {
+static bool sale_add_product(FILE *client_db, FILE *product_db, float *price_compound) {
     char name[32];
     struct product product;
     short quantity;
     float price_detail;
-    FILE *product_db;
-    long pos, end;
-
-    product_db = fopen(PRODUCT_DB, "rb");
-    end = 0l;
-
-    if (product_db) {
-        fseek(product_db, 0l, SEEK_END);
-        end = ftell(product_db);
-    }
-
-    if ((product_db == NULL) || (end == 0l)) {
-        set_text_attr(yellow, true);
-        fputs("La base de données produit est vide", stdout);
-        reset_text_attr();
-        getchar();
-        return;
-    }
+    long pos;
+    bool valid;
 
     input_read_alpha("Nom produit : ", name, sizeof name);
     product_search_by_name(product_db, name, &product, &pos);
 
+    if (pos != -1 && product.quantity <= 0) {
+        log_info(true, "Le produit demandé n'est plus en stock");
+        return 0;
+    }
+
     if (pos != -1l) {
         fputs(product.name, client_db);
-        fputs("Quantité : ", stdout);
-        scanf("%hd", &quantity);
-        input_flush_stdin();
 
-        price_detail = product.price_euro * (float)quantity;
-        *price_compound += price_detail;
+        do {
+            input_read_positive_int(
+                "Quantité : ",
+                "La quantité doit être positive",
+                (int *)&quantity
+            );
 
-        fprintf(
-            client_db,
-            "\n%d\n%.2f\n%.2f\n\n",
-            quantity,
-            price_detail,
-            *price_compound
-        );
+            valid = quantity != 0;
+
+            if (!valid) {
+                log_warning(true, "La quantité ne peut pas être nulle");
+                move_cursor_up(1);
+                erase_line();
+                move_cursor_up(1);
+                erase_line();
+                continue;
+            }
+
+            valid = (quantity <= product.quantity);
+
+            if (!valid) {
+                log_info(
+                    true,
+                    "La quantité demandée est supérieure au stock disponible (%hu)",
+                    product.quantity
+                );
+                continue;
+            }
+        } while (!valid);
+
+        if (valid) {
+            price_detail = product.price_euro * (float)quantity;
+            *price_compound += price_detail;
+
+            fprintf(
+                client_db,
+                "\n%d\n%.2f\n%.2f\n\n",
+                quantity,
+                price_detail,
+                *price_compound
+            );
+
+            product.quantity -= quantity;
+            fseek(product_db, pos, SEEK_SET);
+            fwrite(&product, sizeof product, 1, product_db);
+
+            return valid;
+        }
     }
+
+    return 0;
 }

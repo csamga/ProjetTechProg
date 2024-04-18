@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void list_print(char *list[], short n, int base) {
+void list_print(char *list[], short count, int base) {
 #define CHUNK 256
     short i;
     char tmp[CHUNK];
@@ -16,7 +16,7 @@ void list_print(char *list[], short n, int base) {
     buf_len = CHUNK;
     written = 0;
 
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < count; i++) {
         tmp_written = sprintf(tmp, BOLD "%hd " NORMAL "%s\n", base + i, list[i]);
 
         if (written + tmp_written >= buf_len) {

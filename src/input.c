@@ -86,10 +86,7 @@ void input_read_positive_float(char *prompt, char *reject_prompt, float *dest) {
         getchar();
         valid = (tmp >= 0.0f);
         if (!valid) {
-            set_text_attr(yellow, true);
-            fputs(reject_prompt, stdout);
-            reset_text_attr();
-            getchar();
+            log_warning(true, reject_prompt);
             move_cursor_up(1);
             erase_line();
             move_cursor_up(1);
@@ -111,10 +108,7 @@ void input_read_positive_int(char *prompt, char *reject_prompt, int *dest) {
         getchar();
         valid = (tmp >= 0);
         if (!valid) {
-            set_text_attr(yellow, true);
-            fputs(reject_prompt, stdout);
-            reset_text_attr();
-            getchar();
+            log_warning(true, reject_prompt);
             move_cursor_up(1);
             erase_line();
             move_cursor_up(1);
@@ -147,7 +141,7 @@ bool input_confirm_delete(const char *prompt) {
     bool valid, confirm;
 
     do {
-        log_warning("%s (o/N) ", prompt);
+        log_warning(false, "%s [o/N] ", prompt);
         scanf("%c", &c);
 
         switch (c) {
@@ -218,14 +212,12 @@ static bool input_validate_alpha(char *input, size_t len) {
     }
 
     if (!valid) {
-        set_text_attr(yellow, true);
-        fputs(
+        log_warning(
+            true,
             "Le nom ne peut contenir que des lettres, espaces et tirets "
             "et doit faire entre 1 et 30 caractères",
             stdout
         );
-        reset_text_attr();
-        getchar();
         move_cursor_up(1);
         erase_line();
         move_cursor_up(1);
@@ -246,10 +238,7 @@ static bool input_validate_num(char *reject_prompt, char *input, size_t len, siz
     }
 
     if (!valid) {
-        set_text_attr(yellow, true);
-        fputs(reject_prompt, stdout);
-        reset_text_attr();
-        getchar();
+        log_warning(true, reject_prompt);
         move_cursor_up(1);
         erase_line();
         move_cursor_up(1);
@@ -268,10 +257,7 @@ static bool input_validate_email(char *reject_prompt, char *input, size_t len) {
     valid = true;
 
     if (!valid) {
-        set_text_attr(yellow, true);
-        fputs(reject_prompt, stdout);
-        reset_text_attr();
-        getchar();
+        log_warning(true, reject_prompt);
         move_cursor_up(1);
         erase_line();
         move_cursor_up(1);
@@ -294,14 +280,12 @@ static bool input_validate_street(char *input, size_t len) {
     }
 
     if (!valid) {
-        set_text_attr(yellow, true);
-        fputs(
+        log_warning(
+            true,
             "Le nom de rue ne peut contenir que des lettres, espaces, tirets et chiffres"
             "et doit faire entre 1 et 30 caractères",
             stdout
         );
-        reset_text_attr();
-        getchar();
         move_cursor_up(1);
         erase_line();
         move_cursor_up(1);

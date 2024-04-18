@@ -2,7 +2,6 @@
 #define SUPPLIER_H_INCLUDED
 
 #include "address.h"
-#include "product.h"
 
 #include <stdio.h>
 #include <stdbool.h>

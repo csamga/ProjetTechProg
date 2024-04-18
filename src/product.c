@@ -55,7 +55,7 @@ void product_modify(void) {
     int choice;
     long pos, end;
 
-    log_title("Modification produit\n");
+    log_title("Modification produit");
     
     product_db = fopen(PRODUCT_DB, "rb+");
     end = 0l;
@@ -70,7 +70,7 @@ void product_modify(void) {
             fclose(product_db);
         }
 
-        log_info("La base de données produit est vide");
+        log_info(true, "La base de données produit est vide");
         return;
     }
 
@@ -84,7 +84,7 @@ void product_modify(void) {
     do {
         new_page();
 
-        log_title("Champ à modifier\n");
+        log_title("Champ à modifier");
         list_print(field_str, COUNTOF(field_str), 1);
 
         choice = menu_acquire_input();
@@ -137,7 +137,7 @@ void product_inspect(void) {
     FILE *product_db;
     long pos, end;
 
-    log_title("Informations produit\n");
+    log_title("Informations produit");
 
     product_db = fopen(PRODUCT_DB, "rb");
     end = 0l;
@@ -152,7 +152,7 @@ void product_inspect(void) {
             fclose(product_db);
         }
 
-        log_info("La base de données produit est vide");
+        log_info(true, "La base de données produit est vide");
         return;
     }
 
@@ -175,7 +175,7 @@ void product_delete(void) {
     bool valid;
     long pos, end;
 
-    log_title("Suppression produit\n");
+    log_title("Suppression produit");
 
     old_product_db = fopen(PRODUCT_DB, "rb+");
     end = 0l;
@@ -190,7 +190,7 @@ void product_delete(void) {
             fclose(old_product_db);
         }
 
-        log_info("La base de données produit est vide");
+        log_info(true, "La base de données produit est vide");
         return;
     }
 
@@ -238,7 +238,7 @@ void product_inspect_inventory(void) {
 
     new_page();
 
-    log_title("Inventaire\n");
+    log_title("Inventaire");
 
     product_db = fopen(PRODUCT_DB, "rb");
     end = 0l;
@@ -253,7 +253,7 @@ void product_inspect_inventory(void) {
             fclose(product_db);
         }
 
-        log_info("La base de donées produit est vide");
+        log_info(true, "La base de donées produit est vide");
         return;
     }
 
@@ -325,7 +325,7 @@ void product_search_by_name(
             *pos = -1l;
         }
 
-        log_info("Le produit \"%s\" n'existe pas", name);
+        log_info(true, "Le produit \"%s\" n'existe pas", name);
     }
 }
 
@@ -343,8 +343,9 @@ void product_search_by_id(
     exists = false;
 
     while (!feof(product_db) && !exists) {
-        fread(&tmp, sizeof tmp, 1, product_db);
-        exists = (tmp.id == id);
+        if (fread(&tmp, sizeof tmp, 1, product_db)) {
+            exists = (tmp.id == id);
+        }
     }
 
     if (exists) {
@@ -360,14 +361,33 @@ void product_search_by_id(
             *pos = -1l;
         }
 
-        log_info("Le produit n°%hu n'existe pas", id);
+        log_info(true, "Le produit n°%hu n'existe pas", id);
     }
 }
 
+bool product_db_exists(FILE *product_db) {
+    long pos;
+
+    pos = 0l;
+
+    if (product_db) {
+        fseek(product_db, 0l, SEEK_END);
+        pos = ftell(product_db);
+    }
+
+    if (pos == 0l) {
+        if (product_db != NULL) {
+            fclose(product_db);
+        }
+
+        log_info(true, "La base de données produit est vide");
+    }
+
+    return (pos != 0l);
+}
+
 static void product_read(struct product *product) {
-    set_text_attr(normal, true);
-    puts("Saisie informations produit");
-    reset_text_attr();
+    log_title("Saisir informations produit");
 
     /* Saisie du nom */
     input_read_alpha("Nom : ", product->name, sizeof product->name);

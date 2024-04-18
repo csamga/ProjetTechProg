@@ -3,6 +3,7 @@
 #include "terminal.h"
 #include "utils.h"
 #include "market.h"
+#include "product.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -17,6 +18,11 @@ static char *field_str[] = {
 
 static void supplier_read(struct supplier *supplier);
 static void supplier_create_db(struct supplier *supplier);
+static void supplier_print(struct supplier *supplier);
+static bool supplier_db_exists(FILE *supplier_db);
+
+static bool order_add_product(FILE *product_db, struct order *order);
+static void supplier_order_added(FILE *supplier_db, char *name);
 
 void supplier_register(void) {
     FILE *supplier_db;
@@ -25,24 +31,22 @@ void supplier_register(void) {
     supplier_db = fopen(SUPPLIER_DB, "ab");
 
     if (supplier_db == NULL) {
-        fputs("erreur: impossible d'ouvrir" SUPPLIER_DB, stderr);
-        getchar();
+        log_error("erreur: impossible d'ouvrir" SUPPLIER_DB);
         return;
     }
 
     supplier.id = market_get_n_suppliers();
     supplier.n_order = 0;
-    supplier_create_db(&supplier);
+
     supplier_read(&supplier);
+    supplier_create_db(&supplier);
 
     fwrite(&supplier, sizeof supplier, 1, supplier_db);
     fclose(supplier_db);
 
     market_supplier_added();
 
-    new_page();
-    puts("Fournisseur enregistré avec succès");
-    getchar();
+    log_success("Fournisseur enregistré avec succès");
 }
 
 void supplier_modify(void) {
@@ -53,11 +57,11 @@ void supplier_modify(void) {
     int choice;
     long pos;
 
+    log_title("Modification fournisseur");
+
     supplier_db = fopen(SUPPLIER_DB, "rb+");
 
-    if (supplier_db == NULL) {
-        fputs("erreur: impossible d'ouvrir" SUPPLIER_DB, stderr);
-        getchar();
+    if (!supplier_db_exists(supplier_db)) {
         return;
     }
 
@@ -70,24 +74,24 @@ void supplier_modify(void) {
 
     do {
         new_page();
-        puts("Champ à modifier");
+
+        log_title("Champ à modifier");
         list_print(field_str, 5, 1);
 
         choice = menu_acquire_input();
         finished = false;
-        new_page();
 
         switch (choice) {
         case 0:
-            printf("Ancien nom : %s\n", supplier.last_name);
+            printf("\nAncien nom : %s\n", supplier.last_name);
             input_read_alpha("Nouveau nom : ", supplier.last_name, sizeof supplier.last_name);
             break;
         case 1:
-            printf("Ancien prénom : %s\n", supplier.first_name);
+            printf("\nAncien prénom : %s\n", supplier.first_name);
             input_read_alpha("Nouveau nom : ", supplier.first_name, sizeof supplier.first_name);
             break;
         case 2:
-            printf("Ancien tel : %s\n", supplier.phone);
+            printf("\nAncien tel : %s\n", supplier.phone);
             input_read_num(
                 "Nouveau tel : ",
                 "Le tel doit contenir exactement 10 chiffres",
@@ -97,7 +101,7 @@ void supplier_modify(void) {
             );
             break;
         case 3:
-            printf("Ancien email : %s\n", supplier.email);
+            printf("\nAncien email : %s\n", supplier.email);
             input_read_email("Nouvel email : ", "Adresse email invalide", supplier.email, sizeof supplier.email);
             break;
         case 4:
@@ -109,9 +113,7 @@ void supplier_modify(void) {
     fwrite(&supplier, sizeof supplier, 1, supplier_db);
     fclose(supplier_db);
 
-    new_page();
-    puts("Fournisseur modifié avec succès");
-    getchar();
+    log_success("Fournisseur modifié avec succès");
 }
 
 void supplier_inspect(void) {
@@ -120,22 +122,20 @@ void supplier_inspect(void) {
     char name[32];
     long pos;
 
+    log_title("Informations fournisseur");
+
     supplier_db = fopen(SUPPLIER_DB, "rb");
+
+    if (!supplier_db_exists(supplier_db)) {
+        return;
+    }
 
     input_read_alpha("Nom : ", name, sizeof name);
     supplier_search_by_name(supplier_db, name, &supplier, &pos);
 
     if (pos != -1l) {
-        new_page();
-
-        puts("Informations fournisseur");
-        printf("Identifiant : %hu\n", supplier.id);
-        printf("Nom : %s\n", supplier.last_name);
-        printf("Prénom : %s\n", supplier.first_name);
-        printf("Tel : %s\n", supplier.phone);
-        printf("Email : %s\n", supplier.email);
-        address_inspect(&supplier.address);
-
+        move_cursor_up(1);
+        supplier_print(&supplier);
         getchar();
     }
 
@@ -148,11 +148,11 @@ void supplier_delete(void) {
     char name[32];
     long pos;
 
+    log_title("Suppression fournisseur");
+
     supplier_db = fopen(SUPPLIER_DB, "rb");
 
-    if (supplier_db == NULL) {
-        fputs("erreur: impossible d'ouvrir " SUPPLIER_DB, stderr);
-        getchar();
+    if (!supplier_db_exists(supplier_db)) {
         return;
     }
 
@@ -163,25 +163,22 @@ void supplier_delete(void) {
         return;
     }
 
-    if (!input_confirm_delete("Voulez vous vraiment supprimer le produit ?")) {
+    if (!input_confirm_delete("Voulez vous vraiment supprimer le fournisseur ?")) {
         return;
     }
 
-    new_supplier_db = fopen("db/new_supplier_db.dat", "wb");
+    new_supplier_db = fopen("db/tmp.dat", "ab");
 
     if (new_supplier_db == NULL) {
-        fputs("erreur: impossible d'ouvrir db/new_supplier_db.dat", stderr);
-        getchar();
+        log_error("erreur: impossible d'ouvrir db/tmp.dat");
         return;
     }
 
-    rewind(supplier_db);
-
     while (!feof(supplier_db)) {
-        fread(&supplier, sizeof supplier, 1, supplier_db);
-
-        if (strcmp(name, supplier.last_name) != 0) {
-            fwrite(&supplier, sizeof supplier, 1, new_supplier_db);
+        if (fread(&supplier, sizeof supplier, 1, supplier_db)) {
+            if (strcmp(name, supplier.last_name) != 0) {
+                fwrite(&supplier, sizeof supplier, 1, new_supplier_db);
+            }
         }
     }
 
@@ -189,77 +186,38 @@ void supplier_delete(void) {
     remove(SUPPLIER_DB);
 
     fclose(new_supplier_db);
-    rename("db/new_supplier_db.dat", SUPPLIER_DB);
+    rename("db/tmp.dat", SUPPLIER_DB);
 
     remove(supplier.order_db_file_name);
     market_supplier_removed();
 
-    new_page();
-    puts("Fournisseur supprimé avec succès");
-    getchar();
-}
-
-void order_add_product(struct order *order) {
-    char name[32];
-    struct product product;
-    float price_detail;
-    FILE *product_db;
-    long pos, end;
-
-    product_db = fopen(PRODUCT_DB, "rb");
-    end = 0l;
-
-    if (product_db) {
-        fseek(product_db, 0l, SEEK_END);
-        end = ftell(product_db);
-    }
-
-    if ((product_db == NULL) || (end == 0l)) {
-        set_text_attr(yellow, true);
-        fputs("La base de données produit est vide", stdout);
-        reset_text_attr();
-        getchar();
-        return;
-    }
-
-    input_read_alpha("Nom produit : ", name, sizeof name);
-    product_search_by_name(product_db, name, &product, &pos);
-
-    if (pos != -1l) {
-        order->product_id[order->n_products] = product.id;
-        fputs("Quantité : ", stdout);
-        scanf("%hu", &order->quantity[order->n_products]);
-        input_flush_stdin();
-
-        price_detail = product.price_euro * (float)order->quantity[order->n_products];
-        order->total_euro += price_detail;
-        order->n_products++;
-    }
-}
-
-void supplier_order_added(FILE *supplier_db, char *name) {
-    struct supplier supplier;
-    long pos;
-
-    supplier_search_by_name(supplier_db, name, &supplier, &pos);
-
-    if (pos != -1l) {
-        supplier.n_order++;
-        fseek(supplier_db, pos, SEEK_SET);
-        fwrite(&supplier, sizeof supplier, 1, supplier_db);
-    }
+    log_success("Fournisseur supprimé avec succès");
 }
 
 void supplier_place_order(void) {
-    FILE *supplier_db;
+    FILE *supplier_db, *product_db;
     struct supplier supplier;
     char name[32];
     FILE *supplier_order_db;
     int choice;
     struct order order;
     long pos;
+    bool finished;
+
+    new_page();
+    log_title("Création commande");
 
     supplier_db = fopen(SUPPLIER_DB, "rb+");
+
+    if (!supplier_db_exists(supplier_db)) {
+        return;
+    }
+
+    product_db = fopen(PRODUCT_DB, "rb");
+
+    if (!product_db_exists(product_db)) {
+        return;
+    }
 
     input_read_alpha("Nom du fournisseur : ", name, sizeof name);
     supplier_search_by_name(supplier_db, name, &supplier, &pos);
@@ -271,46 +229,64 @@ void supplier_place_order(void) {
     supplier_order_db = fopen(supplier.order_db_file_name, "ab");
 
     if (supplier_order_db == NULL) {
-        fprintf(stderr, "erreur: impossible d'ouvrir %s\n", supplier.order_db_file_name);
-        getchar();
+        log_error("erreur: impossible d'ouvrir %s\n", supplier.order_db_file_name);
         return;
     }
 
-    order.n_products = 0;
     order.order_id = supplier.n_order;
+    order.n_products = 0;
     order.total_euro = 0.0f;
 
     do {
-        order_add_product(&order);
+        order_add_product(product_db, &order);
 
-        puts("Continuer ? (O/n)");
-        choice = getchar();
-        input_flush_stdin();
-    } while (
-        (order.n_products < MAX_PRODUCTS_PER_COMMAND) &&
-        (choice == 'o' || choice == 'O' || choice == '\x0d')
-    );
+        finished = (order.n_products >= MAX_PRODUCTS_PER_COMMAND);
 
-    fwrite(&order, sizeof order, 1, supplier_order_db);
+        if (finished) {
+            log_info(false, "Le nombre maximal de produits par commande est atteint\n");
+            continue;
+        } else {
+            fputs("Continuer ? [O/n] ", stdout);
+            choice = getchar();
+            input_flush_stdin();
 
-    fclose(supplier_order_db);
+            finished = !(choice == 'o' || choice == 'O' || choice == '\x0d');
+        }
+    } while (!finished);
 
-    supplier_order_added(supplier_db, name);
+    fclose(product_db);
+
+    if (order.n_products > 0) {
+        fwrite(&order, sizeof order, 1, supplier_order_db);
+        fclose(supplier_order_db);
+
+        supplier_order_added(supplier_db, name);
+
+        log_success("Commande enregistrée avec succès");
+    } else {
+        log_info(true, "Aucun article n'a été commandé");
+    }
     fclose(supplier_db);
 }
 
 void supplier_inspect_order(void) {
     FILE *supplier_db, *supplier_order_db, *product_db;
     struct supplier supplier;
-    unsigned short order_id, product_id;
-    bool found;
-    char name[32];
-    struct order order;
-    unsigned short i;
     struct product product;
-    long end, pos;
+    struct order order;
+    char name[32];
+    unsigned short product_id, i_order, i_product;
+    long pos;
+    float product_tot;
+
+    new_page();
+    log_title("Informations commandes");
 
     supplier_db = fopen(SUPPLIER_DB, "rb");
+
+    if (!supplier_db_exists(supplier_db)) {
+        return;
+    }
 
     input_read_alpha("Nom du fournisseur : ", name, sizeof name);
     supplier_search_by_name(supplier_db, name, &supplier, &pos);
@@ -324,62 +300,64 @@ void supplier_inspect_order(void) {
     supplier_order_db = fopen(supplier.order_db_file_name, "rb");
 
     fseek(supplier_order_db, 0l, SEEK_END);
-    end = ftell(supplier_order_db);
-
-    if (end == 0l) {
-        puts("Ce fournisseur n'a aucune commande en attente de livraison");
-        getchar();
-        return;
-    }
-
+    pos = ftell(supplier_order_db);
     rewind(supplier_order_db);
 
-    input_read_positive_int(
-        "Identifiant commande : ",
-        "L'identifiant doit être positif",
-        (int *)&order_id
-    );
-
-    while (!feof(supplier_order_db) && !found) {
-        fread(&order, sizeof order, 1, supplier_order_db);
-        found = (order.order_id == order_id);
-    }
-
-    if (!found) {
+    if (pos == 0l) {
+        log_info(true, "Le fournisseur n'a aucune commande en attente de livraison");
         return;
     }
-
-    fclose(supplier_order_db);
 
     product_db = fopen(PRODUCT_DB, "rb");
 
-    for (i = 0; i < order.n_products; i++) {
-        product_id = order.product_id[i];
-        product_search_by_id(product_db, product_id, &product, &pos);
+    i_order = 0;
 
-        if (pos != -1l) {
-            printf("Nom : %s\n", product.name);
-            printf("Quantité : %hu\n", order.quantity[i]);
+    while (!feof(supplier_order_db)) {
+        if (fread(&order, sizeof order, 1, supplier_order_db)) {
+            log_title("\nCommande %hu (ID %hu)", ++i_order, order.order_id);
+
+            for (i_product = 0; i_product < order.n_products; i_product++) {
+                product_id = order.product_id[i_product];
+                product_search_by_id(product_db, product_id, &product, &pos);
+
+                if (pos != -1l) {
+                    product_tot = product.price_euro * order.quantity[i_product];
+                    printf(
+                        "Produit : %s x %hu (%.2f€)\n",
+                        product.name, order.quantity[i_product], product_tot
+                    );
+                }
+            }
+
+            log_info(false, "Total dû (€) : %.2f\n", order.total_euro);
         }
     }
 
+    fclose(supplier_order_db);
     fclose(product_db);
 
-    printf("Total dû (€): %.2f\n", order.total_euro);
     getchar();
 }
 
 void supplier_register_delivery(void) {
     FILE *supplier_db, *supplier_order_db, *supplier_order_db_tmp, *product_db;
     struct supplier supplier;
+    struct order order, order_tmp;
+    struct product product;
     char name[32];
     long pos;
     unsigned short order_id, i, product_id;
     bool found;
-    struct order order, order_tmp;
-    struct product product;
+
+    new_page();
+    log_title("Enregistrement livraison");
 
     supplier_db = fopen(SUPPLIER_DB, "rb");
+
+    if (!supplier_db_exists(supplier_db)) {
+        return;
+    }
+
     input_read_alpha("Nom : ", name, sizeof name);
     supplier_search_by_name(supplier_db, name, &supplier, &pos);
     fclose(supplier_db);
@@ -390,42 +368,57 @@ void supplier_register_delivery(void) {
 
     supplier_order_db = fopen(supplier.order_db_file_name, "rb+");
 
-    if (supplier_order_db == NULL) {
-        fputs("pas de commandes", stdout);
-        getchar();
+    fseek(supplier_order_db, 0l, SEEK_END);
+    pos = ftell(supplier_order_db);
+    rewind(supplier_order_db);
+
+    if (pos == 0l) {
+        log_info(true, "Le fournisseur n'a aucune commande en attente de livraison");
         return;
     }
 
-    input_read_positive_int(
-        "Identifiant commande : ",
-        "L'identifiant doit être positif",
-        (int *)&order_id
-    );
+    do {
+        input_read_positive_int(
+            "Identifiant commande : ",
+            "L'identifiant doit être positif",
+            (int *)&order_id
+        );
 
-    while (!feof(supplier_order_db) && !found) {
-        fread(&order, sizeof order, 1, supplier_order_db);
-        found = (order.order_id == order_id);
-    }
+        while (!feof(supplier_order_db) && !found) {
+            fread(&order, sizeof order, 1, supplier_order_db);
+            found = (order.order_id == order_id);
+        }
 
-    if (!found) {
-        return;
-    } else {
-        rewind(supplier_order_db);
-        supplier_order_db_tmp = fopen("db/tmp.dat", "wb");
+        if (!found) {
+            log_info(false, "Aucune commande ne possède l'identifiant %hu\n", order_id);
 
-        while (!feof(supplier_order_db)) {
-            fread(&order_tmp, sizeof order_tmp, 1, supplier_order_db);
+            if (input_confirm_delete("Voulez-vous consulter les commandes du fournisseur ?")) {
+                supplier_inspect_order();
+                new_page();
+                log_title("Enregistrement livraison");
+                rewind(supplier_order_db);
+            } else {
+                fclose(supplier_order_db);
+                return;
+            }
+        }
+    } while (!found);
 
+    rewind(supplier_order_db);
+    supplier_order_db_tmp = fopen("db/tmp.dat", "ab");
+
+    while (!feof(supplier_order_db)) {
+        if (fread(&order_tmp, sizeof order_tmp, 1, supplier_order_db)) {
             if (order_tmp.order_id != order_id) {
                 fwrite(&order_tmp, sizeof order_tmp, 1, supplier_order_db_tmp);
             }
         }
-
-        fclose(supplier_order_db);
-        fclose(supplier_order_db_tmp);
-        remove(supplier.order_db_file_name);
-        rename("db/tmp.dat", supplier.order_db_file_name);
     }
+
+    fclose(supplier_order_db);
+    fclose(supplier_order_db_tmp);
+    remove(supplier.order_db_file_name);
+    rename("db/tmp.dat", supplier.order_db_file_name);
 
     product_db = fopen(PRODUCT_DB, "rb+");
 
@@ -439,6 +432,11 @@ void supplier_register_delivery(void) {
     }
 
     fclose(product_db);
+
+    log_success(
+        "Livraison enregistrée avec succès\n"
+        "Les stocks ont été mis à jour"
+    );
 }
 
 void supplier_search_by_name(
@@ -471,8 +469,7 @@ void supplier_search_by_name(
             *pos = -1l;
         }
 
-        printf("Le fournisseur \"%s\" n'existe pas", name);
-        getchar();
+        log_info(true, "Le fournisseur \"%s\" n'existe pas", name);
     }
 }
 
@@ -503,16 +500,14 @@ void supplier_search_by_id(
             *supplier = tmp;
         }
     } else {
-        supplier = NULL;
-        printf("Le supplier n°%hu n'existe pas", id);
-        getchar();
+        log_info(true, "Le supplier n°%hu n'existe pas", id);
     }
 
     fclose(supplier_db);
 }
 
 static void supplier_read(struct supplier *supplier) {
-    puts("Saisie informations fournisseur");
+    log_title("Saisie informations fournisseur");
 
     /* Saisie du nom */
     input_read_alpha("Nom : ", supplier->last_name, sizeof supplier->last_name);
@@ -549,10 +544,77 @@ static void supplier_create_db(struct supplier *supplier) {
     db = fopen(supplier->order_db_file_name, "wx");
 
     if (db == NULL) {
-        fprintf(stderr, "erreur: impossible de créer le fichier %s", tmp);
-        getchar();
+        log_error("erreur: le fichier %s existe déjà", tmp);
         return;
     }
 
     fclose(db);
+}
+
+static void supplier_print(struct supplier *supplier) {
+    printf("Identifiant : %hu\n", supplier->id);
+    printf("Nom : %s\n", supplier->last_name);
+    printf("Prénom : %s\n", supplier->first_name);
+    printf("Tel : %s\n", supplier->phone);
+    printf("Email : %s\n", supplier->email);
+    address_inspect(&supplier->address);
+}
+
+static bool order_add_product(FILE *product_db, struct order *order) {
+    char name[32];
+    struct product product;
+    float price_detail;
+    long pos;
+
+    input_read_alpha("Nom produit : ", name, sizeof name);
+    product_search_by_name(product_db, name, &product, &pos);
+
+    if (pos != -1l) {
+        order->product_id[order->n_products] = product.id;
+        fputs("Quantité : ", stdout);
+        scanf("%hu", &order->quantity[order->n_products]);
+        input_flush_stdin();
+
+        price_detail = product.price_euro * (float)order->quantity[order->n_products];
+        order->total_euro += price_detail;
+        order->n_products++;
+
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static void supplier_order_added(FILE *supplier_db, char *name) {
+    struct supplier supplier;
+    long pos;
+
+    supplier_search_by_name(supplier_db, name, &supplier, &pos);
+
+    if (pos != -1l) {
+        supplier.n_order++;
+        fseek(supplier_db, pos, SEEK_SET);
+        fwrite(&supplier, sizeof supplier, 1, supplier_db);
+    }
+}
+
+static bool supplier_db_exists(FILE *supplier_db) {
+    long pos;
+
+    pos = 0l;
+
+    if (supplier_db) {
+        fseek(supplier_db, 0l, SEEK_END);
+        pos = ftell(supplier_db);
+    }
+
+    if (pos == 0l) {
+        if (supplier_db != NULL) {
+            fclose(supplier_db);
+        }
+
+        log_info(true, "La base de données fournisseur est vide");
+    }
+
+    return (pos != 0l);
 }
